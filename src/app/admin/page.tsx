@@ -30,8 +30,9 @@ export default function AdminPage() {
 
   // Add player form
   const [newName, setNewName] = useState('')
-  const [newTeam, setNewTeam] = useState('')
-  const [newPosition, setNewPosition] = useState('Handler')
+const [newTeam, setNewTeam] = useState('')
+const [newPosition, setNewPosition] = useState('Handler')
+const [newStartingPrice, setNewStartingPrice] = useState(100)
 
   // Weights form
   const [weights, setWeights] = useState<WeightConfig>({ goals: 2.5, assists: 2.0, ds: 1.5, turns: -1.0 })
@@ -86,16 +87,16 @@ export default function AdminPage() {
       name: newName,
       team: newTeam,
       position: newPosition,
-      currentPrice: DEFAULT_STARTING_PRICE,
-      previousPrice: DEFAULT_STARTING_PRICE,
-      priceHistory: [{ date: new Date().toISOString(), price: DEFAULT_STARTING_PRICE, tournamentName: 'IPO' }],
+      currentPrice: newStartingPrice,
+      previousPrice: newStartingPrice,
+      priceHistory: [{ date: new Date().toISOString(), price: newStartingPrice, tournamentName: 'IPO' }],
       tournamentStats: [],
       sharesAvailable: MAX_SHARES_PER_PLAYER,
       totalShares: MAX_SHARES_PER_PLAYER,
       createdAt: new Date().toISOString(),
     })
     toast.success(`${newName} added to the market!`)
-    setNewName(''); setNewTeam('')
+    setNewName(''); setNewTeam(''); setNewStartingPrice(100)
     load()
   }
 
@@ -279,7 +280,17 @@ export default function AdminPage() {
                 <option>Hybrid</option>
               </select>
             </div>
-            <p className="text-xs text-muted">Starts at {formatPrice(DEFAULT_STARTING_PRICE)} · {MAX_SHARES_PER_PLAYER} shares available</p>
+            <div>
+  <label className="text-xs text-muted block mb-1.5">Starting Price ($)</label>
+  <input
+    type="number"
+    min={1}
+    value={newStartingPrice}
+    onChange={e => setNewStartingPrice(parseFloat(e.target.value) || 100)}
+    className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text placeholder-muted focus:outline-none focus:border-accent"
+  />
+</div>
+<p className="text-xs text-muted">{MAX_SHARES_PER_PLAYER} shares available</p>
             <button type="submit" className="w-full bg-accent text-background py-3 rounded-xl font-semibold text-sm hover:bg-accent-dim transition-colors">
               Add Player
             </button>
