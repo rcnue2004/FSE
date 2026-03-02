@@ -180,12 +180,12 @@ export async function executeTrade(
     userId,
     playerId,
     playerName: player.name,
+    userName: user.displayName,
     type,
     shares,
     price,
     total,
     timestamp: new Date().toISOString(),
-    userName: user.displayName,
   }
   await addDoc(collection(db, 'trades'), trade)
 }
