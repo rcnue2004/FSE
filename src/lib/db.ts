@@ -14,8 +14,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import { Player, User, Trade, MarketSettings, WeightConfig, TournamentStats } from '@/types'
-import { calculatePriceChange, DEFAULT_WEIGHTS, STARTING_CASH } from './pricing'
-
+import { calculatePriceChange, DEFAULT_WEIGHTS, STARTING_CASH, MAX_SHARES_PER_PLAYER } from './pricing'
 // ── Players ──────────────────────────────────────────────────────────────────
 
 export async function getAllPlayers(): Promise<Player[]> {
