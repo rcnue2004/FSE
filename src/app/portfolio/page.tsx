@@ -127,7 +127,7 @@ export default function PortfolioPage() {
               >
                 <span className={clsx(
                   'text-sm font-bold w-6 text-center',
-                  i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-amber-600' : 'text-muted'
+                  i === 0 ? 'text-yellow-400' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-amber-700' : 'text-muted'
                 )}>
                   {i + 1}
                 </span>
