@@ -215,3 +215,27 @@ export async function getLeaderboard(): Promise<{ uid: string; displayName: stri
     })
     .sort((a, b) => b.totalValue - a.totalValue)
 }
+export async function adminUpdateHolding(
+  userId: string,
+  playerId: string,
+  newShares: number
+): Promise<void> {
+  const [user, player] = await Promise.all([getUser(userId), getPlayer(playerId)])
+  if (!user || !player) throw new Error('User or player not found')
+
+  const currentShares = user.portfolio.holdings[playerId] || 0
+  const difference = newShares - currentShares
+  const cashAdjustment = difference * player.currentPrice
+  const newCash = user.portfolio.cash - cashAdjustment
+  const newSharesAvailable = player.sharesAvailable - difference
+
+  const batch = writeBatch(db)
+  batch.update(doc(db, 'users', userId), {
+    [`portfolio.holdings.${playerId}`]: newShares,
+    'portfolio.cash': newCash,
+  })
+  batch.update(doc(db, 'players', playerId), {
+    sharesAvailable: newSharesAvailable,
+  })
+  await batch.commit()
+}

@@ -1,13 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { getAllPlayers, submitTournamentStats, getMarketSettings, updateMarketSettings, createPlayer } from '@/lib/db'
-import { Player, MarketSettings, WeightConfig } from '@/types'
+import { getAllPlayers, submitTournamentStats, getMarketSettings, updateMarketSettings, createPlayer, adminUpdateHolding, getLeaderboard } from '@/lib/db'import { Player, MarketSettings, WeightConfig } from '@/types'
 import { formatPrice } from '@/lib/pricing'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { Shield, Plus, Settings, Lock, Unlock, ChevronDown } from 'lucide-react'
-import clsx from 'clsx'
+import { Shield, Plus, Settings, Lock, Unlock, Users, Edit2, Check, X } from 'lucide-react'import clsx from 'clsx'
 import { DEFAULT_STARTING_PRICE, MAX_SHARES_PER_PLAYER } from '@/lib/pricing'
 
 export default function AdminPage() {
@@ -16,7 +14,12 @@ export default function AdminPage() {
   const [players, setPlayers] = useState<Player[]>([])
   const [settings, setSettings] = useState<MarketSettings | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'stats' | 'weights' | 'addPlayer' | 'market'>('stats')
+  const [activeTab, setActiveTab] = useState<'stats' | 'weights' | 'addPlayer' | 'market' | 'holdings'>('stats')
+  const [leaderboard, setLeaderboard] = useState<{uid: string; displayName: string; totalValue: number; cash: number; holdings: Record<string, number>}[]>([])
+  const [selectedUser, setSelectedUser] = useState<string | null>(null)
+  const [editingHolding, setEditingHolding] = useState<{playerId: string; value: string} | null>(null)
+  const [savingHolding, setSavingHolding] = useState(false)
+  const [viewMode, setViewMode] = useState<'byUser' | 'byPlayer'>('byUser')
 
   // Tournament stats form
   const [selectedPlayer, setSelectedPlayer] = useState('')
@@ -38,10 +41,22 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
   const [weights, setWeights] = useState<WeightConfig>({ goals: 2.5, assists: 2.0, ds: 1.5, turns: -1.0 })
 
   const load = async () => {
-    const [ps, s] = await Promise.all([getAllPlayers(), getMarketSettings()])
+    const [ps, s, lb] = await Promise.all([getAllPlayers(), getMarketSettings(), getLeaderboard()])
     setPlayers(ps)
     setSettings(s)
     setWeights(s.weights)
+    const lbWithDetails = await Promise.all(
+      lb.map(async (entry) => {
+        const { getUser } = await import('@/lib/db')
+        const u = await getUser(entry.uid)
+        return {
+          ...entry,
+          cash: u?.portfolio.cash || 0,
+          holdings: u?.portfolio.holdings || {},
+        }
+      })
+    )
+    setLeaderboard(lbWithDetails)
     setLoading(false)
   }
 
@@ -120,6 +135,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
     { id: 'addPlayer', label: 'Add Player' },
     { id: 'weights', label: 'Price Weights' },
     { id: 'market', label: 'Market Control' },
+    { id: 'holdings', label: 'Holdings' },
   ] as const
 
   return (
@@ -369,6 +385,261 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
             </div>
           </div>
           <p className="text-xs text-muted">Close the market during active tournaments. Reopen when ready to allow trading.</p>
+        </div>
+      )}
+
+      {/* Holdings Manager */}
+      {activeTab === 'holdings' && (
+        <div className="bg-card border border-border rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Users className="w-5 h-5 text-accent" /> Holdings Manager
+            </h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setViewMode('byUser')}
+                className={clsx('px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                  viewMode === 'byUser' ? 'bg-accent text-background' : 'bg-surface text-muted hover:text-text')}
+              >
+                By User
+              </button>
+              <button
+                onClick={() => setViewMode('byPlayer')}
+                className={clsx('px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                  viewMode === 'byPlayer' ? 'bg-accent text-background' : 'bg-surface text-muted hover:text-text')}
+              >
+                By Player
+              </button>
+            </div>
+          </div>
+
+          {viewMode === 'byUser' && (
+            <div className="space-y-3">
+              {leaderboard.map((entry) => (
+                <div key={entry.uid} className="bg-surface rounded-xl overflow-hidden">
+                  <div
+                    className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-border/30 transition-colors"
+                    onClick={() => setSelectedUser(selectedUser === entry.uid ? null : entry.uid)}
+                  >
+                    <div>
+                      <p className="font-semibold text-text">{entry.displayName}</p>
+                      <p className="text-xs text-muted mt-0.5">
+                        Cash: <span className="text-green font-mono">{formatPrice(entry.cash)}</span>
+                        {' · '}Total: <span className="text-accent font-mono">{formatPrice(entry.totalValue)}</span>
+                      </p>
+                    </div>
+                    <span className="text-muted text-sm">
+                      {Object.values(entry.holdings).filter(v => v > 0).length} positions
+                      {selectedUser === entry.uid ? ' ▲' : ' ▼'}
+                    </span>
+                  </div>
+
+                  {selectedUser === entry.uid && (
+                    <div className="border-t border-border">
+                      {Object.keys(entry.holdings).filter(pid => entry.holdings[pid] > 0).length === 0 ? (
+                        <p className="text-muted text-sm px-4 py-3">No holdings</p>
+                      ) : (
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-border">
+                              <th className="text-left px-4 py-2 text-muted font-medium">Player</th>
+                              <th className="text-center px-4 py-2 text-muted font-medium">Shares</th>
+                              <th className="text-right px-4 py-2 text-muted font-medium">Value</th>
+                              <th className="text-right px-4 py-2 text-muted font-medium">Edit</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Object.entries(entry.holdings)
+                              .filter(([, qty]) => qty > 0)
+                              .map(([pid, qty]) => {
+                                const player = players.find(p => p.id === pid)
+                                if (!player) return null
+                                const isEditing = editingHolding?.playerId === pid && selectedUser === entry.uid
+                                return (
+                                  <tr key={pid} className="border-b border-border/50 last:border-0">
+                                    <td className="px-4 py-2 text-text">{player.name}</td>
+                                    <td className="px-4 py-2 text-center">
+                                      {isEditing ? (
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          max={10}
+                                          value={editingHolding.value}
+                                          onChange={e => setEditingHolding({ playerId: pid, value: e.target.value })}
+                                          className="w-16 bg-background border border-accent rounded px-2 py-1 text-center text-sm font-mono focus:outline-none"
+                                          autoFocus
+                                        />
+                                      ) : (
+                                        <span className="font-mono font-bold">{qty}</span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-2 text-right font-mono text-accent">
+                                      {formatPrice(player.currentPrice * qty)}
+                                    </td>
+                                    <td className="px-4 py-2 text-right">
+                                      {isEditing ? (
+                                        <div className="flex gap-1 justify-end">
+                                          <button
+                                            onClick={async () => {
+                                              setSavingHolding(true)
+                                              try {
+                                                await adminUpdateHolding(entry.uid, pid, parseInt(editingHolding.value) || 0)
+                                                toast.success('Holdings updated')
+                                                setEditingHolding(null)
+                                                load()
+                                              } catch (e: any) {
+                                                toast.error(e.message)
+                                              } finally {
+                                                setSavingHolding(false)
+                                              }
+                                            }}
+                                            disabled={savingHolding}
+                                            className="text-green hover:opacity-80 p-1"
+                                          >
+                                            <Check className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            onClick={() => setEditingHolding(null)}
+                                            className="text-red hover:opacity-80 p-1"
+                                          >
+                                            <X className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          onClick={() => setEditingHolding({ playerId: pid, value: String(qty) })}
+                                          className="text-muted hover:text-accent transition-colors p-1"
+                                        >
+                                          <Edit2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {viewMode === 'byPlayer' && (
+            <div className="space-y-3">
+              {players.sort((a, b) => a.name.localeCompare(b.name)).map((player) => {
+                const owners = leaderboard.filter(u => (u.holdings[player.id] || 0) > 0)
+                return (
+                  <div key={player.id} className="bg-surface rounded-xl overflow-hidden">
+                    <div
+                      className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-border/30 transition-colors"
+                      onClick={() => setSelectedUser(selectedUser === player.id ? null : player.id)}
+                    >
+                      <div>
+                        <p className="font-semibold text-text">{player.name}</p>
+                        <p className="text-xs text-muted mt-0.5">
+                          Price: <span className="text-accent font-mono">{formatPrice(player.currentPrice)}</span>
+                          {' · '}Available: <span className="font-mono">{player.sharesAvailable}/{player.totalShares}</span>
+                        </p>
+                      </div>
+                      <span className="text-muted text-sm">
+                        {owners.length} owner{owners.length !== 1 ? 's' : ''}
+                        {selectedUser === player.id ? ' ▲' : ' ▼'}
+                      </span>
+                    </div>
+
+                    {selectedUser === player.id && (
+                      <div className="border-t border-border">
+                        {owners.length === 0 ? (
+                          <p className="text-muted text-sm px-4 py-3">No one owns this player</p>
+                        ) : (
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-border">
+                                <th className="text-left px-4 py-2 text-muted font-medium">User</th>
+                                <th className="text-center px-4 py-2 text-muted font-medium">Shares</th>
+                                <th className="text-right px-4 py-2 text-muted font-medium">Value</th>
+                                <th className="text-right px-4 py-2 text-muted font-medium">Edit</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {owners.map((entry) => {
+                                const qty = entry.holdings[player.id] || 0
+                                const isEditing = editingHolding?.playerId === `${player.id}-${entry.uid}`
+                                return (
+                                  <tr key={entry.uid} className="border-b border-border/50 last:border-0">
+                                    <td className="px-4 py-2 text-text">{entry.displayName}</td>
+                                    <td className="px-4 py-2 text-center">
+                                      {isEditing ? (
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          max={10}
+                                          value={editingHolding.value}
+                                          onChange={e => setEditingHolding({ playerId: `${player.id}-${entry.uid}`, value: e.target.value })}
+                                          className="w-16 bg-background border border-accent rounded px-2 py-1 text-center text-sm font-mono focus:outline-none"
+                                          autoFocus
+                                        />
+                                      ) : (
+                                        <span className="font-mono font-bold">{qty}</span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-2 text-right font-mono text-accent">
+                                      {formatPrice(player.currentPrice * qty)}
+                                    </td>
+                                    <td className="px-4 py-2 text-right">
+                                      {isEditing ? (
+                                        <div className="flex gap-1 justify-end">
+                                          <button
+                                            onClick={async () => {
+                                              setSavingHolding(true)
+                                              try {
+                                                await adminUpdateHolding(entry.uid, player.id, parseInt(editingHolding.value) || 0)
+                                                toast.success('Holdings updated')
+                                                setEditingHolding(null)
+                                                load()
+                                              } catch (e: any) {
+                                                toast.error(e.message)
+                                              } finally {
+                                                setSavingHolding(false)
+                                              }
+                                            }}
+                                            disabled={savingHolding}
+                                            className="text-green hover:opacity-80 p-1"
+                                          >
+                                            <Check className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            onClick={() => setEditingHolding(null)}
+                                            className="text-red hover:opacity-80 p-1"
+                                          >
+                                            <X className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          onClick={() => setEditingHolding({ playerId: `${player.id}-${entry.uid}`, value: String(qty) })}
+                                          className="text-muted hover:text-accent transition-colors p-1"
+                                        >
+                                          <Edit2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

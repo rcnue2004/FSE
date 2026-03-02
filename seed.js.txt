@@ -1,0 +1,55 @@
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
+
+const firebaseConfig = {
+  projectId: "frisbee-stock-exchange",
+};
+
+initializeApp({ credential: cert(firebaseConfig) });
+const db = getFirestore();
+
+const players = [
+  { name: 'Asher', price: 80, position: 'Hybrid' },
+  { name: 'Ivan', price: 80, position: 'Handler' },
+  { name: 'Lumo', price: 80, position: 'Cutter' },
+  { name: 'Riley', price: 75, position: 'Handler' },
+  { name: 'Connor', price: 65, position: 'Cutter' },
+  { name: 'Owen', price: 65, position: 'Cutter' },
+  { name: 'Ethan', price: 60, position: 'Cutter' },
+  { name: 'Andy', price: 55, position: 'Cutter' },
+  { name: 'Arjun', price: 55, position: 'Handler' },
+  { name: 'CP', price: 55, position: 'Cutter' },
+  { name: 'Aadi', price: 50, position: 'Cutter' },
+  { name: 'Adusei', price: 50, position: 'Cutter' },
+  { name: 'Jeff', price: 50, position: 'Hybrid' },
+  { name: 'Josh', price: 50, position: 'Cutter' },
+  { name: 'Reid', price: 50, position: 'Hybrid' },
+  { name: 'Braedon', price: 45, position: 'Cutter' },
+  { name: 'Karan', price: 45, position: 'Cutter' },
+  { name: 'Parker', price: 45, position: 'Cutter' },
+  { name: 'Nikhil', price: 40, position: 'Handler' },
+  { name: 'Zach', price: 40, position: 'Handler' },
+];
+
+async function seed() {
+  console.log('Adding players...');
+  for (const player of players) {
+    await db.collection('players').add({
+      name: player.name,
+      team: 'WOOF',
+      position: player.position,
+      currentPrice: player.price,
+      previousPrice: player.price,
+      priceHistory: [{ date: new Date().toISOString(), price: player.price, tournamentName: 'IPO' }],
+      tournamentStats: [],
+      sharesAvailable: 10,
+      totalShares: 10,
+      createdAt: new Date().toISOString(),
+    });
+    console.log(`✓ Added ${player.name} at $${player.price}`);
+  }
+  console.log('All done!');
+  process.exit(0);
+}
+
+seed().catch(console.error);
