@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0a0a0f;
+  --surface: #12121a;
+  --card: #1a1a2e;
+  --border: #2a2a40;
+  --accent: #00d4aa;
+  --green: #00c896;
+  --red: #ff4757;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--background);
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.price-up {
+  animation: priceUp 0.8s ease-out;
+}
+
+.price-down {
+  animation: priceDown 0.8s ease-out;
+}
+
+@keyframes priceUp {
+  0% { background-color: rgba(0, 200, 150, 0.25); }
+  100% { background-color: transparent; }
+}
+
+@keyframes priceDown {
+  0% { background-color: rgba(255, 71, 87, 0.25); }
+  100% { background-color: transparent; }
+}
+
+.glass {
+  background: rgba(26, 26, 46, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+}
+
+.ticker-positive {
+  color: var(--green);
+}
+
+.ticker-negative {
+  color: var(--red);
+}
