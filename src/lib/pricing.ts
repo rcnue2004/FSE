@@ -8,7 +8,7 @@ export const DEFAULT_WEIGHTS: WeightConfig = {
 }
 
 export const STARTING_CASH = 10000
-export const MAX_SHARES_PER_PLAYER = 10
+export const MAX_SHARES_PER_PLAYER = 15
 export const DEFAULT_STARTING_PRICE = 100
 
 /**
