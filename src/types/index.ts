@@ -46,6 +46,7 @@ export interface Portfolio {
 export interface Trade {
   id: string
   userId: string
+  userName: string
   playerId: string
   playerName: string
   type: 'buy' | 'sell'
@@ -79,3 +80,4 @@ export interface MarketSettings {
   weights: WeightConfig
   activeTournament?: string
 }
+
