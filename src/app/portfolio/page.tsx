@@ -125,12 +125,14 @@ export default function PortfolioPage() {
                   entry.uid === user.uid && 'bg-accent/5'
                 )}
               >
-                <span className={clsx(
-                  'text-sm font-bold w-6 text-center',
-                  i === 0 ? 'text-yellow-400' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-amber-700' : 'text-muted'
-                )}>
-                  {i + 1}
-                </span>
+                <span
+  className="text-sm font-bold w-6 text-center"
+  style={{
+    color: i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : '#6b7280'
+  }}
+>
+  {i + 1}
+</span>
                 <span className={clsx('flex-1 text-sm font-medium', entry.uid === user.uid ? 'text-accent' : 'text-text')}>
                   {entry.displayName}
                 </span>
