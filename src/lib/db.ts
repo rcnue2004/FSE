@@ -13,6 +13,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { db } from './firebase'
+export { db }
 import { Player, User, Trade, MarketSettings, WeightConfig, TournamentStats } from '@/types'
 import { calculatePriceChange, DEFAULT_WEIGHTS, STARTING_CASH, MAX_SHARES_PER_PLAYER } from './pricing'
 // ── Players ──────────────────────────────────────────────────────────────────
@@ -184,6 +185,7 @@ export async function executeTrade(
     price,
     total,
     timestamp: new Date().toISOString(),
+    userName: user.displayName,
   }
   await addDoc(collection(db, 'trades'), trade)
 }
