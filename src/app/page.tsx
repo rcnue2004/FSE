@@ -9,7 +9,7 @@ import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 
-type SortKey = 'price' | 'change' | 'name' | 'goals' | 'assists'
+type SortKey = 'price' | 'change' | 'name' | 'shares'
 
 export default function DashboardPage() {
   const [players, setPlayers] = useState<Player[]>([])
@@ -63,13 +63,9 @@ export default function DashboardPage() {
         case 'name': return sortDir === 'asc'
           ? a.name.localeCompare(b.name)
           : b.name.localeCompare(a.name)
-        case 'goals':
-          va = a.tournamentStats.reduce((s, t) => s + t.goals, 0)
-          vb = b.tournamentStats.reduce((s, t) => s + t.goals, 0)
-          break
-        case 'assists':
-          va = a.tournamentStats.reduce((s, t) => s + t.assists, 0)
-          vb = b.tournamentStats.reduce((s, t) => s + t.assists, 0)
+        case 'shares':
+          va = a.sharesAvailable
+          vb = b.sharesAvailable
           break
         default: va = 0; vb = 0
       }
@@ -162,8 +158,7 @@ export default function DashboardPage() {
             <SortButton label="Price" k="price" />
             <SortButton label="Change" k="change" />
             <SortButton label="Name" k="name" />
-            <SortButton label="Goals" k="goals" />
-            <SortButton label="Assists" k="assists" />
+            <SortButton label="Shares" k="shares" />
           </div>
 
           {loading ? (

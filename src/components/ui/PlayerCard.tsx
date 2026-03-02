@@ -72,7 +72,9 @@ export default function PlayerCard({ player }: Props) {
         })()}
 
         <div className="flex justify-between items-center mt-3 text-xs text-muted">
-          <span>{player.sharesAvailable}/{player.totalShares} shares left</span>
+          <span className={player.sharesAvailable === 0 ? 'text-red' : 'text-green'}>
+  {player.sharesAvailable}/{player.totalShares} shares left
+</span>
           <span>{player.tournamentStats.length} tournaments</span>
         </div>
       </div>
