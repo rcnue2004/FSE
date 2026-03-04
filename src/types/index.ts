@@ -25,8 +25,9 @@ export interface Player {
   priceHistory: PricePoint[]
   tournamentStats: TournamentStats[]
   sharesAvailable: number
-  totalShares: number // max 10
+  totalShares: number
   createdAt: string
+  warning?: string
 }
 
 export interface WeightConfig {

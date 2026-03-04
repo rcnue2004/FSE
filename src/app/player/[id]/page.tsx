@@ -7,7 +7,7 @@ import { Player } from '@/types'
 import PriceChart from '@/components/charts/PriceChart'
 import { useAuth } from '@/hooks/useAuth'
 import { formatPrice, calcPercentChange, formatPercent } from '@/lib/pricing'
-import { TrendingUp, TrendingDown, ArrowLeft, Target, Zap, Shield, AlertTriangle } from 'lucide-react'
+import { TrendingUp, TrendingDown, ArrowLeft, Target, Zap, Shield, AlertTriangle, TriangleAlert } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { format } from 'date-fns'
@@ -67,7 +67,15 @@ export default function PlayerPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-text">{player.name}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-text">{player.name}</h1>
+            {player.warning && (
+              <div className="flex items-center gap-2 bg-yellow-400/10 border border-yellow-400/30 rounded-lg px-3 py-1">
+                <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0" />
+                <p className="text-yellow-400 text-sm">{player.warning}</p>
+              </div>
+            )}
+          </div>
           <p className="text-muted mt-1">{player.team} · {player.position}</p>
         </div>
         <div className="text-right">

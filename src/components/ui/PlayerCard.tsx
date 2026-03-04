@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { Player } from '@/types'
 import { formatPrice, calcPercentChange, formatPercent } from '@/lib/pricing'
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 
@@ -34,7 +34,18 @@ export default function PlayerCard({ player }: Props) {
       >
         <div className="flex justify-between items-start mb-3">
           <div>
-            <h3 className="font-semibold text-text">{player.name}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-text">{player.name}</h3>
+              {player.warning && (
+                <div className="relative group">
+                  <AlertTriangle className="w-4 h-4 text-yellow-400 cursor-help" />
+                  <div className="absolute left-0 top-6 z-50 hidden group-hover:block bg-card border border-yellow-400/40 rounded-lg px-3 py-2 text-xs text-text w-48 shadow-xl">
+                    <p className="font-semibold text-yellow-400 mb-1">⚠️ Warning</p>
+                    <p>{player.warning}</p>
+                  </div>
+                </div>
+              )}
+            </div>
             <p className="text-xs text-muted mt-0.5">{player.team}</p>
           </div>
           <div className="text-right">

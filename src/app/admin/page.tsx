@@ -1,12 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { getAllPlayers, submitTournamentStats, getMarketSettings, updateMarketSettings, createPlayer, adminUpdateHolding, getLeaderboard } from '@/lib/db'
+import { getAllPlayers, submitTournamentStats, getMarketSettings, updateMarketSettings, createPlayer, adminUpdateHolding, getLeaderboard, updatePlayer } from '@/lib/db'
+
 import { Player, MarketSettings, WeightConfig } from '@/types'
 import { formatPrice } from '@/lib/pricing'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { Shield, Plus, Settings, Lock, Unlock, Users, Edit2, Check, X } from 'lucide-react'
+import { Shield, Plus, Settings, Lock, Unlock, Users, Edit2, Check, X, AlertTriangle } from 'lucide-react'
 import clsx from 'clsx'
 import { DEFAULT_STARTING_PRICE, MAX_SHARES_PER_PLAYER } from '@/lib/pricing'
 
@@ -26,6 +27,9 @@ export default function AdminPage() {
   // Tournament stats form
   const [selectedPlayer, setSelectedPlayer] = useState('')
   const [tournamentName, setTournamentName] = useState('')
+  const [warningPlayer, setWarningPlayer] = useState('')
+  const [warningMessage, setWarningMessage] = useState('')
+  const [savingWarning, setSavingWarning] = useState(false)
   const [tournamentDate, setTournamentDate] = useState(new Date().toISOString().split('T')[0])
   const [goals, setGoals] = useState(0)
   const [assists, setAssists] = useState(0)
@@ -137,7 +141,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
     { id: 'addPlayer', label: 'Add Player' },
     { id: 'weights', label: 'Price Weights' },
     { id: 'market', label: 'Market Control' },
-    { id: 'holdings', label: 'Holdings' },
+    { id: 'warnings', label: 'Warnings' },
   ] as const
 
   return (
@@ -389,6 +393,99 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
           <p className="text-xs text-muted">Close the market during active tournaments. Reopen when ready to allow trading.</p>
         </div>
       )}
+
+      {/* Warnings */}
+      {activeTab === 'warnings' && (
+        <div className="bg-card border border-border rounded-2xl p-6">
+          <h2 className="text-lg font-semibold mb-2">Player Warnings</h2>
+          <p className="text-sm text-muted mb-6">Add a caution warning to a player. Users will see a yellow triangle on their card with your message when they hover over it.</p>
+
+          <div className="space-y-4 mb-6">
+            <div>
+              <label className="text-xs text-muted block mb-1.5">Player</label>
+              <select
+                value={warningPlayer}
+                onChange={e => {
+                  setWarningPlayer(e.target.value)
+                  const p = players.find(p => p.id === e.target.value)
+                  setWarningMessage(p?.warning || '')
+                }}
+                className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text focus:outline-none focus:border-accent"
+              >
+                <option value="">Select a player...</option>
+                {players.sort((a,b) => a.name.localeCompare(b.name)).map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {p.warning ? '⚠️' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs text-muted block mb-1.5">Warning Message</label>
+              <input
+                type="text"
+                value={warningMessage}
+                onChange={e => setWarningMessage(e.target.value)}
+                placeholder="e.g. Broken hand, won't be playing"
+                className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text placeholder-muted focus:outline-none focus:border-accent"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={async () => {
+                  if (!warningPlayer) return
+                  setSavingWarning(true)
+                  await updatePlayer(warningPlayer, { warning: warningMessage })
+                  toast.success('Warning saved!')
+                  setSavingWarning(false)
+                  load()
+                }}
+                disabled={!warningPlayer || savingWarning}
+                className="flex-1 bg-yellow-400 text-background py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-40"
+              >
+                {savingWarning ? 'Saving...' : 'Save Warning'}
+              </button>
+              <button
+                onClick={async () => {
+                  if (!warningPlayer) return
+                  setSavingWarning(true)
+                  await updatePlayer(warningPlayer, { warning: '' })
+                  setWarningMessage('')
+                  toast.success('Warning removed')
+                  setSavingWarning(false)
+                  load()
+                }}
+                disabled={!warningPlayer || savingWarning}
+                className="flex-1 bg-surface border border-border text-muted py-3 rounded-xl font-semibold text-sm hover:text-text transition-colors disabled:opacity-40"
+              >
+                Remove Warning
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm text-muted font-medium">Current Warnings</p>
+            {players.filter(p => p.warning).length === 0 ? (
+              <p className="text-sm text-muted text-center py-4">No active warnings</p>
+            ) : (
+              players.filter(p => p.warning).map(p => (
+                <div key={p.id} className="flex items-center gap-3 bg-surface rounded-lg px-3 py-2.5">
+                  <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-text">{p.name}</p>
+                    <p className="text-xs text-muted">{p.warning}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
       {/* Holdings Manager */}
       {activeTab === 'holdings' && (
