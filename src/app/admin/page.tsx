@@ -17,7 +17,7 @@ export default function AdminPage() {
   const [players, setPlayers] = useState<Player[]>([])
   const [settings, setSettings] = useState<MarketSettings | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'stats' | 'weights' | 'addPlayer' | 'market' | 'holdings'>('stats')
+  const [activeTab, setActiveTab] = useState<'stats' | 'weights' | 'addPlayer' | 'market' | 'holdings' | 'warnings'>('stats')
   const [leaderboard, setLeaderboard] = useState<{uid: string; displayName: string; totalValue: number; cash: number; holdings: Record<string, number>}[]>([])
   const [selectedUser, setSelectedUser] = useState<string | null>(null)
   const [editingHolding, setEditingHolding] = useState<{playerId: string; value: string} | null>(null)
