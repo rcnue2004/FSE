@@ -483,10 +483,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
+    
       {/* Holdings Manager */}
       {activeTab === 'holdings' && (
         <div className="bg-card border border-border rounded-2xl p-6">
