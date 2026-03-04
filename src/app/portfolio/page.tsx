@@ -133,9 +133,9 @@ export default function PortfolioPage() {
 >
   {i + 1}
 </span>
-                <span className={clsx('flex-1 text-sm font-medium', entry.uid === user.uid ? 'text-accent' : 'text-text')}>
-                  {entry.displayName}
-                </span>
+                <Link href={`/user/${entry.uid}`} className={clsx('flex-1 text-sm font-medium hover:underline', entry.uid === user.uid ? 'text-accent' : 'text-text')}>
+  {entry.displayName}
+</Link>
                 <span className="font-mono text-sm text-text">{formatPrice(entry.totalValue)}</span>
               </div>
             ))}
