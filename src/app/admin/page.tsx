@@ -443,7 +443,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                   load()
                 }}
                 disabled={!warningPlayer || savingWarning}
-                className="flex-1 bg-yellow-400 text-background py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-40"
+                className="flex-1 bg-green text-white py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-40"
               >
                 {savingWarning ? 'Saving...' : 'Save Warning'}
               </button>
@@ -458,7 +458,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                   load()
                 }}
                 disabled={!warningPlayer || savingWarning}
-                className="flex-1 bg-surface border border-border text-muted py-3 rounded-xl font-semibold text-sm hover:text-text transition-colors disabled:opacity-40"
+                className="flex-1 bg-red text-white py-3 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-40"
               >
                 Remove Warning
               </button>
