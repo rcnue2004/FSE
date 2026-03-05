@@ -7,9 +7,10 @@ import { Player, MarketSettings, WeightConfig } from '@/types'
 import { formatPrice } from '@/lib/pricing'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { Shield, Plus, Settings, Lock, Unlock, Users, Edit2, Check, X, AlertTriangle } from 'lucide-react'
+import { Shield, Plus, Settings, Lock, Unlock, Users, Edit2, Check, X, AlertTriangle, Upload } from 'lucide-react'
 import clsx from 'clsx'
 import { DEFAULT_STARTING_PRICE, MAX_SHARES_PER_PLAYER } from '@/lib/pricing'
+import { parseStatsCSV } from '@/lib/parseCSV'
 
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth()
@@ -17,7 +18,7 @@ export default function AdminPage() {
   const [players, setPlayers] = useState<Player[]>([])
   const [settings, setSettings] = useState<MarketSettings | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'stats' | 'weights' | 'addPlayer' | 'market' | 'holdings' | 'warnings'>('stats')
+  const [activeTab, setActiveTab] = useState<'stats' | 'weights' | 'addPlayer' | 'market' | 'holdings' | 'warnings' | 'csvImport'>('stats')
   const [leaderboard, setLeaderboard] = useState<{uid: string; displayName: string; totalValue: number; cash: number; holdings: Record<string, number>}[]>([])
   const [selectedUser, setSelectedUser] = useState<string | null>(null)
   const [editingHolding, setEditingHolding] = useState<{playerId: string; value: string} | null>(null)
@@ -30,6 +31,10 @@ export default function AdminPage() {
   const [warningPlayer, setWarningPlayer] = useState('')
   const [warningMessage, setWarningMessage] = useState('')
   const [savingWarning, setSavingWarning] = useState(false)
+const [csvImporting, setCsvImporting] = useState(false)
+  const [csvPreview, setCsvPreview] = useState<any[]>([])
+  const [csvFile, setCsvFile] = useState<File | null>(null)
+  const [csvSkipped, setCsvSkipped] = useState<string[]>([])
   const [tournamentDate, setTournamentDate] = useState(new Date().toISOString().split('T')[0])
   const [goals, setGoals] = useState(0)
   const [assists, setAssists] = useState(0)
@@ -142,6 +147,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
     { id: 'weights', label: 'Price Weights' },
     { id: 'market', label: 'Market Control' },
     { id: 'warnings', label: 'Warnings' },
+    { id: 'csvImport', label: 'CSV Import' },
   ] as const
 
   return (
@@ -738,6 +744,140 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
           )}
         </div>
       )}
-    </div>
+    {/* CSV Import */}
+      {activeTab === 'csvImport' && (
+        <div className="bg-card border border-border rounded-2xl p-6">
+          <h2 className="text-lg font-semibold mb-2">CSV Stat Import</h2>
+          <p className="text-sm text-muted mb-6">
+            Upload your stats CSV file. Stats for tournaments that already exist on a player will be automatically skipped to prevent duplicates.
+          </p>
+
+          <div className="space-y-4">
+            <label className={`
+              flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-colors
+              ${csvFile ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/50 hover:bg-surface'}
+            `}>
+              <Upload className="w-8 h-8 text-muted mb-2" />
+              <span className="text-sm text-muted">
+                {csvFile ? csvFile.name : 'Click to upload .csv file'}
+              </span>
+              <input
+                type="file"
+                accept=".csv"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  setCsvFile(file)
+                  setCsvPreview([])
+                  setCsvSkipped([])
+
+                  const text = await file.text()
+                  const parsed = parseStatsCSV(text)
+
+                  const skipped: string[] = []
+                  const toImport: any[] = []
+
+                  for (const stat of parsed) {
+                    const player = players.find(p =>
+                      p.name.toLowerCase() === stat.playerName.toLowerCase()
+                    )
+                    if (!player) {
+                      skipped.push(`${stat.playerName} (player not found in market)`)
+                      continue
+                    }
+                    const alreadyExists = player.tournamentStats.some(
+                      t => t.tournamentName.toLowerCase() === stat.tournamentName.toLowerCase()
+                    )
+                    if (alreadyExists) {
+                      skipped.push(`${stat.playerName} — ${stat.tournamentName} (already uploaded)`)
+                      continue
+                    }
+                    toImport.push({ ...stat, playerId: player.id })
+                  }
+
+                  setCsvPreview(toImport)
+                  setCsvSkipped(skipped)
+                }}
+              />
+            </label>
+
+            {csvPreview.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-text mb-2">
+                  Ready to import {csvPreview.length} player stat{csvPreview.length > 1 ? 's' : ''}:
+                </p>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {csvPreview.map((s, i) => (
+                    <div key={i} className="flex items-center justify-between bg-surface rounded-lg px-3 py-2 text-sm">
+                      <span className="font-medium text-text">{s.playerName}</span>
+                      <span className="text-muted">{s.tournamentName}</span>
+                      <span className="text-xs font-mono">
+                        <span className="text-green">G{s.goals}</span>{' '}
+                        <span className="text-accent">A{s.assists}</span>{' '}
+                        <span className="text-yellow-400">D{s.ds}</span>{' '}
+                        <span className="text-red">T{s.turns}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {csvSkipped.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-muted mb-2">
+                  Skipping {csvSkipped.length} (duplicates or unknown players):
+                </p>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {csvSkipped.map((s, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-surface rounded-lg px-3 py-2 text-sm text-muted">
+                      <AlertTriangle className="w-3 h-3 text-yellow-400 shrink-0" />
+                      {s}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {csvPreview.length > 0 && (
+              <button
+                onClick={async () => {
+                  setCsvImporting(true)
+                  let imported = 0
+                  try {
+                    for (const stat of csvPreview) {
+                      await submitTournamentStats(stat.playerId, {
+                        tournamentId: `${stat.tournamentName}-${stat.date}`,
+                        tournamentName: stat.tournamentName,
+                        date: stat.date,
+                        goals: stat.goals,
+                        assists: stat.assists,
+                        ds: stat.ds,
+                        turns: stat.turns,
+                        priceChange: 0,
+                      }, weights)
+                      imported++
+                    }
+                    toast.success(`Imported stats for ${imported} players!`)
+                    setCsvPreview([])
+                    setCsvFile(null)
+                    setCsvSkipped([])
+                    load()
+                  } catch (e: any) {
+                    toast.error('Import failed: ' + e.message)
+                  } finally {
+                    setCsvImporting(false)
+                  }
+                }}
+                disabled={csvImporting}
+                className="w-full bg-accent text-background py-3 rounded-xl font-semibold text-sm hover:bg-accent-dim transition-colors disabled:opacity-50"
+              >
+                {csvImporting ? `Importing...` : `Import ${csvPreview.length} Players`}
+              </button>
+            )}
+          </div>
+        </div>
+      )}</div>
   )
 }
