@@ -308,7 +308,7 @@ export default function StatsPage() {
         </div>
       </div>
 
-      {activeView === 'current' && (<>{/* Controls */}
+      {activeView === 'current' && <div>
       <div className="flex flex-wrap gap-3 mb-6 items-center">
 
         {/* Games Filter */}
@@ -502,10 +502,10 @@ export default function StatsPage() {
         </div>
       )}
 
-      <p className="text-xs text-muted mt-4 text-center">
+       <p className="text-xs text-muted mt-4 text-center">
         CMP% = Completions / (Completions + Throwaways) · REC% = Catches / (Catches + Drops) · +/- = Goals+Assists+Ds−(Throwaways+Drops)
       </p>
-      </>)}
+      </div>}
 
       {/* Historical Section */}
       {activeView === 'historical' && (
