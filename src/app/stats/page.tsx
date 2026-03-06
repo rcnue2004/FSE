@@ -32,23 +32,22 @@ interface SeasonStats {
 
 const COLUMNS = [
   { key: 'playerName', label: 'Player', title: 'Player' },
-  { key: 'gamesPlayed', label: 'GP', title: 'Games Played' },
-  { key: 'pointsPlayed', label: 'Pts', title: 'Points Played' },
-  { key: 'oPointsPlayed', label: 'O-Pts', title: 'Offensive Points Played' },
-  { key: 'dPointsPlayed', label: 'D-Pts', title: 'Defensive Points Played' },
+  { key: 'plusMinus', label: '+/-', title: 'Plus/Minus' },
   { key: 'goals', label: 'G', title: 'Goals' },
   { key: 'assists', label: 'A', title: 'Assists' },
   { key: 'ds', label: 'D', title: 'Blocks' },
-  { key: 'turns', label: 'T', title: 'Turnovers (Drops + Throws)' },
   { key: 'throwaways', label: 'TA', title: 'Throwaways' },
   { key: 'drops', label: 'DR', title: 'Drops' },
-  { key: 'plusMinus', label: '+/-', title: 'Plus/Minus' },
   { key: 'catches', label: 'REC', title: 'Catches/Receptions' },
   { key: 'completions', label: 'CMP', title: 'Completions' },
   { key: 'throwAttempts', label: 'ATT', title: 'Throw Attempts' },
   { key: 'completionPct', label: 'CMP%', title: 'Completion %' },
   { key: 'catchingPct', label: 'REC%', title: 'Catch %' },
   { key: 'pulls', label: 'PUL', title: 'Pulls' },
+  { key: 'dPointsPlayed', label: 'D-Pts', title: 'Defensive Points Played' },
+  { key: 'oPointsPlayed', label: 'O-Pts', title: 'Offensive Points Played' },
+  { key: 'pointsPlayed', label: 'Pts', title: 'Points Played' },
+  { key: 'gamesPlayed', label: 'GP', title: 'Games Played' },
 ] as const
 
 type ColKey = typeof COLUMNS[number]['key']
@@ -121,7 +120,7 @@ export default function StatsPage() {
     }
     return Object.values(map).map(s => ({
       ...s,
-      completionPct: s.throwAttempts > 0 ? Math.round((s.completions / s.throwAttempts) * 100) : 0,
+      completionPct: (s.completions + s.throwaways) > 0 ? Math.round((s.completions / (s.completions + s.throwaways)) * 100) : 0,
       catchingPct: (s.catches + s.drops) > 0 ? Math.round((s.catches / (s.catches + s.drops)) * 100) : 0,
       plusMinus: s.goals + s.assists + s.ds - s.turns,
     }))
@@ -309,29 +308,28 @@ export default function StatsPage() {
                       {!isGame && (
                         <td className="px-3 py-2.5 font-semibold text-text sticky left-0 bg-card whitespace-nowrap">{g.playerName}</td>
                       )}
-                      {!isGame && <td className="px-3 py-2.5 text-center font-mono text-muted">{g.gamesPlayed}</td>}
-                      <td className="px-3 py-2.5 text-center font-mono">{g.pointsPlayed}</td>
-                      <td className="px-3 py-2.5 text-center font-mono text-muted">{g.oPointsPlayed}</td>
-                      <td className="px-3 py-2.5 text-center font-mono text-muted">{g.dPointsPlayed}</td>
-                      <td className="px-3 py-2.5 text-center font-mono text-green font-bold">{g.goals}</td>
-                      <td className="px-3 py-2.5 text-center font-mono text-accent">{g.assists}</td>
-                      <td className="px-3 py-2.5 text-center font-mono text-yellow-400">{g.ds}</td>
-                      <td className="px-3 py-2.5 text-center font-mono text-red">{g.turns}</td>
-                      <td className="px-3 py-2.5 text-center font-mono text-muted">{g.throwaways}</td>
-                      <td className="px-3 py-2.5 text-center font-mono text-muted">{g.drops}</td>
                       <td className={clsx('px-3 py-2.5 text-center font-mono font-bold',
                         g.plusMinus > 0 ? 'text-green' : g.plusMinus < 0 ? 'text-red' : 'text-muted'
                       )}>{g.plusMinus > 0 ? `+${g.plusMinus}` : g.plusMinus}</td>
+                      <td className="px-3 py-2.5 text-center font-mono text-green font-bold">{g.goals}</td>
+                      <td className="px-3 py-2.5 text-center font-mono text-accent">{g.assists}</td>
+                      <td className="px-3 py-2.5 text-center font-mono text-green">{g.ds}</td>
+                      <td className="px-3 py-2.5 text-center font-mono text-red">{g.throwaways}</td>
+                      <td className="px-3 py-2.5 text-center font-mono text-red">{g.drops}</td>
                       <td className="px-3 py-2.5 text-center font-mono">{g.catches}</td>
                       <td className="px-3 py-2.5 text-center font-mono">{g.completions}</td>
                       <td className="px-3 py-2.5 text-center font-mono text-muted">{g.throwAttempts}</td>
                       <td className={clsx('px-3 py-2.5 text-center font-mono',
-                        g.completionPct >= 90 ? 'text-green' : g.completionPct >= 75 ? 'text-accent' : g.completionPct > 0 ? 'text-red' : 'text-muted'
+                        g.completionPct === 0 ? 'text-muted' : g.completionPct >= 85 ? 'text-green' : 'text-red'
                       )}>{g.completionPct > 0 ? `${g.completionPct}%` : '—'}</td>
                       <td className={clsx('px-3 py-2.5 text-center font-mono',
-                        g.catchingPct >= 90 ? 'text-green' : g.catchingPct >= 75 ? 'text-accent' : g.catchingPct > 0 ? 'text-red' : 'text-muted'
+                        g.catchingPct === 0 ? 'text-muted' : g.catchingPct >= 85 ? 'text-green' : 'text-red'
                       )}>{g.catchingPct > 0 ? `${g.catchingPct}%` : '—'}</td>
                       <td className="px-3 py-2.5 text-center font-mono text-muted">{g.pulls}</td>
+                      <td className="px-3 py-2.5 text-center font-mono text-muted">{g.dPointsPlayed}</td>
+                      <td className="px-3 py-2.5 text-center font-mono text-muted">{g.oPointsPlayed}</td>
+                      <td className="px-3 py-2.5 text-center font-mono">{g.pointsPlayed}</td>
+                      {!isGame && <td className="px-3 py-2.5 text-center font-mono text-muted">{g.gamesPlayed}</td>}
                     </tr>
                   )
                 })}
@@ -342,7 +340,8 @@ export default function StatsPage() {
       )}
 
       <p className="text-xs text-muted mt-4 text-center">
-        T = Throwaways + Drops · CMP% = Completion % · REC% = Catch % · +/- = Goals+Assists+Ds−Turnovers
+              CMP% = Completions / (Completions + Throwaways) · REC% = Catches / (Catches + Drops) · +/- = Goals+Assists+Ds−(Throwaways+Drops)
+
       </p>
     </div>
   )

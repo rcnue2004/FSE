@@ -204,7 +204,7 @@ export function parseFullCSV(csvText: string): ParsedCSVResult {
   // Calculate derived stats
   const gameStats = Object.values(gameStatsMap).map(s => {
     s.turns = s.throwaways + s.drops
-    s.completionPct = s.throwAttempts > 0 ? Math.round((s.completions / s.throwAttempts) * 100) : 0
+    s.completionPct = s.throwAttempts > 0 ? Math.round((s.completions / (s.completions + s.throwaways)) * 100) : 0
     const catchAttempts = s.catches + s.drops
     s.catchingPct = catchAttempts > 0 ? Math.round((s.catches / catchAttempts) * 100) : 0
     s.plusMinus = s.goals + s.assists + s.ds - s.turns

@@ -37,14 +37,14 @@ export default function Navbar() {
               <Link href="/" className="flex items-center gap-1.5 hover:text-text transition-colors">
                 <LayoutDashboard className="w-4 h-4" /> Market
               </Link>
-              <Link href="/stats" className="flex items-center gap-1.5 hover:text-text transition-colors">
-                <BarChart2 className="w-4 h-4" /> Stats
-              </Link>
               {user && (
                 <Link href="/portfolio" className="flex items-center gap-1.5 hover:text-text transition-colors">
                   <Briefcase className="w-4 h-4" /> Portfolio
                 </Link>
               )}
+              <Link href="/stats" className="flex items-center gap-1.5 hover:text-text transition-colors">
+                <BarChart2 className="w-4 h-4" /> Stats
+              </Link>
               {user?.isAdmin && (
                 <Link href="/admin" className="flex items-center gap-1.5 text-yellow-400 hover:text-yellow-300 transition-colors">
                   <Shield className="w-4 h-4" /> Admin
