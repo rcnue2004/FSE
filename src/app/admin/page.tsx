@@ -816,9 +816,27 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
               <input
                 type="checkbox"
                 checked={statsOnly}
-                onChange={e => {
-                  setStatsOnly(e.target.checked)
-                  if (!e.target.checked) setHistoricalOnly(false)
+                onChange={async e => {
+                  const checked = e.target.checked
+                  setStatsOnly(checked)
+                  if (!checked) setHistoricalOnly(false)
+                  // Re-run duplicate check with new statsOnly value
+                  const file = csvFile
+                  if (!file) return
+                  const text = await file.text()
+                  const { tournamentStats: parsed, gameStats: parsedGames } = parseFullCSV(text)
+                  ;(window as any).__pendingGameStats = parsedGames
+                  const skipped: string[] = []
+                  const toImport: any[] = []
+                  for (const stat of parsed) {
+                    const player = players.find(p => p.name.toLowerCase() === stat.playerName.toLowerCase())
+                    if (!player) { skipped.push(`${stat.playerName} (player not found in market)`); continue }
+                    const alreadyExists = player.tournamentStats.some(t => t.tournamentName.toLowerCase() === stat.tournamentName.toLowerCase())
+                    if (alreadyExists && !checked) { skipped.push(`${stat.playerName} — ${stat.tournamentName} (already uploaded)`); continue }
+                    toImport.push({ ...stat, playerId: player.id, isDuplicate: alreadyExists })
+                  }
+                  setCsvPreview(toImport)
+                  setCsvSkipped(skipped)
                 }}
                 className="w-4 h-4 accent-accent"
               />
