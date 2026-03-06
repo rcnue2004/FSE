@@ -36,6 +36,7 @@ const [csvImporting, setCsvImporting] = useState(false)
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [csvSkipped, setCsvSkipped] = useState<string[]>([])
   const [statsOnly, setStatsOnly] = useState(false)
+  const [historicalOnly, setHistoricalOnly] = useState(false)
   const [tournamentDate, setTournamentDate] = useState(new Date().toISOString().split('T')[0])
   const [goals, setGoals] = useState(0)
   const [assists, setAssists] = useState(0)
@@ -810,7 +811,10 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
               <input
                 type="checkbox"
                 checked={statsOnly}
-                onChange={e => setStatsOnly(e.target.checked)}
+                onChange={e => {
+                  setStatsOnly(e.target.checked)
+                  if (!e.target.checked) setHistoricalOnly(false)
+                }}
                 className="w-4 h-4 accent-accent"
               />
               <div>
@@ -818,6 +822,21 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                 <p className="text-xs text-muted">Use this to import historical stats without affecting current prices</p>
               </div>
             </label>
+
+            {statsOnly && (
+              <label className="flex items-center gap-3 cursor-pointer bg-surface border border-yellow-400/30 rounded-xl px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={historicalOnly}
+                  onChange={e => setHistoricalOnly(e.target.checked)}
+                  className="w-4 h-4 accent-accent"
+                />
+                <div>
+                  <p className="text-sm font-medium text-yellow-400">Historical only — save to historical stats</p>
+                  <p className="text-xs text-muted">Data will appear in the Historical tab on the Stats page, not the current season</p>
+                </div>
+              </label>
+            )}
             {csvPreview.length > 0 && (
               <div>
                 <p className="text-sm font-medium text-text mb-2">
@@ -894,13 +913,18 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                     const pendingGames = (window as any).__pendingGameStats || []
                     for (const gs of pendingGames) {
                       if (csvPreview.some((s: any) => s.playerName === gs.playerName && s.tournamentName === gs.tournamentName)) {
-                        await addDoc(col(firedb, 'gameStats'), gs)
+                        await addDoc(col(firedb, historicalOnly ? 'historicalStats' : 'gameStats'), {
+                          ...gs,
+                          season: new Date(gs.date).getFullYear().toString(),
+                        })
                       }
                     }
                     toast.success(`Imported stats for ${imported} players!`)
                     setCsvPreview([])
                     setCsvFile(null)
                     setCsvSkipped([])
+                    setHistoricalOnly(false)
+                    setStatsOnly(false)
                     load()
                   } catch (e: any) {
                     toast.error('Import failed: ' + e.message)
