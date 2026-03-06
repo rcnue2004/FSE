@@ -73,7 +73,8 @@ export default function StatsPage() {
   }, [])
 
   const tournaments = useMemo(() => {
-    const t = [...new Set(gameStats.map(g => g.tournamentName))].sort()
+        const t = Array.from(new Set(gameStats.map(g => g.tournamentName))).sort()
+
     return t
   }, [gameStats])
 
