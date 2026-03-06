@@ -31,7 +31,7 @@ interface SeasonStats {
 }
 
 const COLUMNS = [
-  { key: 'playerName', label: 'Player', desc: false },
+  { key: 'playerName', label: 'Player', title: 'Player' },
   { key: 'gamesPlayed', label: 'GP', title: 'Games Played' },
   { key: 'pointsPlayed', label: 'Pts', title: 'Points Played' },
   { key: 'oPointsPlayed', label: 'O-Pts', title: 'Offensive Points Played' },
