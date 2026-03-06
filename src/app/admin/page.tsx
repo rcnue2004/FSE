@@ -798,7 +798,12 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                       skipped.push(`${stat.playerName} — ${stat.tournamentName} (already uploaded)`)
                       continue
                     }
-                    toImport.push({ ...stat, playerId: player.id, isDuplicate: alreadyExists })
+                    if (alreadyExists && statsOnly) {
+                      // Stats-only mode bypasses duplicate check — always import to stats tab
+                      toImport.push({ ...stat, playerId: player.id, isDuplicate: true })
+                      continue
+                    }
+                    toImport.push({ ...stat, playerId: player.id, isDuplicate: false })
                   }
 
                   setCsvPreview(toImport)
