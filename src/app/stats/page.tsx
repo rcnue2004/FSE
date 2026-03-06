@@ -6,7 +6,6 @@ import { ParsedPlayerGameStats } from '@/lib/parseCSV'
 import { ChevronUp, ChevronDown, ChevronsUpDown, Filter, X } from 'lucide-react'
 import clsx from 'clsx'
 
-type ViewMode = 'season' | 'game'
 type SortDir = 'asc' | 'desc'
 
 interface SeasonStats {
@@ -55,7 +54,6 @@ type ColKey = typeof COLUMNS[number]['key']
 export default function StatsPage() {
   const [gameStats, setGameStats] = useState<ParsedPlayerGameStats[]>([])
   const [loading, setLoading] = useState(true)
-  const [viewMode, setViewMode] = useState<ViewMode>('season')
   const [sortKey, setSortKey] = useState<ColKey>('plusMinus')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [search, setSearch] = useState('')
@@ -163,18 +161,7 @@ export default function StatsPage() {
     })
   }, [seasonStats, sortKey, sortDir])
 
-  const sortedGames = useMemo(() => {
-    return [...filteredStats].sort((a, b) => {
-      const va = a[sortKey as keyof ParsedPlayerGameStats]
-      const vb = b[sortKey as keyof ParsedPlayerGameStats]
-      if (typeof va === 'string' && typeof vb === 'string') {
-        return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
-      }
-      return sortDir === 'asc' ? (va as number) - (vb as number) : (vb as number) - (va as number)
-    })
-  }, [filteredStats, sortKey, sortDir])
-
-  const SortIcon = ({ col }: { col: ColKey }) => {
+    const SortIcon = ({ col }: { col: ColKey }) => {
     if (sortKey !== col) return <ChevronsUpDown className="w-3 h-3 opacity-30" />
     return sortDir === 'desc'
       ? <ChevronDown className="w-3 h-3 text-accent" />
@@ -187,7 +174,7 @@ export default function StatsPage() {
     </div>
   )
 
-  const rows = viewMode === 'season' ? sortedSeason : sortedGames
+  const rows = sortedSeason
 
   return (
     <div className="animate-fade-in">
@@ -200,25 +187,6 @@ export default function StatsPage() {
 
       {/* Controls */}
       <div className="flex flex-wrap gap-3 mb-6 items-center">
-        {/* View toggle */}
-        <div className="flex bg-surface rounded-xl overflow-hidden border border-border">
-          <button
-            onClick={() => setViewMode('season')}
-            className={clsx('px-4 py-2 text-sm font-medium transition-colors',
-              viewMode === 'season' ? 'bg-accent text-background' : 'text-muted hover:text-text'
-            )}
-          >
-            Season
-          </button>
-          <button
-            onClick={() => setViewMode('game')}
-            className={clsx('px-4 py-2 text-sm font-medium transition-colors',
-              viewMode === 'game' ? 'bg-accent text-background' : 'text-muted hover:text-text'
-            )}
-          >
-            By Game
-          </button>
-        </div>
 
         {/* Games Filter */}
         <div className="relative">
@@ -332,7 +300,7 @@ export default function StatsPage() {
         />
 
         <span className="text-muted text-xs ml-auto">
-          {viewMode === 'season' ? `${sortedSeason.length} players` : `${sortedGames.length} game logs`}
+          {sortedSeason.length} players
         </span>
       </div>
 
@@ -353,39 +321,14 @@ export default function StatsPage() {
                       ? null
                       : null
                   ))}
-                  {viewMode === 'game' && (
-                    <>
-                      <th
-                        onClick={() => handleSort('playerName')}
-                        className="text-left px-3 py-3 text-muted font-medium cursor-pointer hover:text-text whitespace-nowrap sticky left-0 bg-surface z-10"
-                      >
-                        <div className="flex items-center gap-1">
-                          Player <SortIcon col="playerName" />
-                        </div>
-                      </th>
-                      <th
-                        onClick={() => handleSort('tournamentName' as ColKey)}
-                        className="text-left px-3 py-3 text-muted font-medium cursor-pointer hover:text-text whitespace-nowrap"
-                      >
-                        <div className="flex items-center gap-1">
-                          Tournament <SortIcon col={'tournamentName' as ColKey} />
-                        </div>
-                      </th>
-                      <th className="text-left px-3 py-3 text-muted font-medium whitespace-nowrap">
-                        Opponent
-                      </th>
-                    </>
-                  )}
-                  {viewMode === 'season' && (
-                    <th
-                      onClick={() => handleSort('playerName')}
-                      className="text-left px-3 py-3 text-muted font-medium cursor-pointer hover:text-text whitespace-nowrap sticky left-0 bg-surface z-10"
-                    >
-                      <div className="flex items-center gap-1">
-                        Player <SortIcon col="playerName" />
-                      </div>
-                    </th>
-                  )}
+                  <th
+                    onClick={() => handleSort('playerName')}
+                    className="text-left px-3 py-3 text-muted font-medium cursor-pointer hover:text-text whitespace-nowrap sticky left-0 bg-surface z-10"
+                  >
+                    <div className="flex items-center gap-1">
+                      Player <SortIcon col="playerName" />
+                    </div>
+                  </th>
                   {COLUMNS.filter(c => c.key !== 'playerName').map(col => (
                     <th
                       key={col.key}
@@ -402,23 +345,13 @@ export default function StatsPage() {
               </thead>
               <tbody>
                 {rows.map((row, i) => {
-                  const isGame = viewMode === 'game'
                   const g = row as any
                   return (
                     <tr
                       key={i}
                       className="border-b border-border/50 last:border-0 hover:bg-surface/50 transition-colors"
                     >
-                      {isGame && (
-                        <>
-                          <td className="px-3 py-2.5 font-semibold text-text sticky left-0 bg-card whitespace-nowrap">{g.playerName}</td>
-                          <td className="px-3 py-2.5 text-muted whitespace-nowrap">{g.tournamentName}</td>
-                          <td className="px-3 py-2.5 text-muted whitespace-nowrap">vs {g.opponent}</td>
-                        </>
-                      )}
-                      {!isGame && (
-                        <td className="px-3 py-2.5 font-semibold text-text sticky left-0 bg-card whitespace-nowrap">{g.playerName}</td>
-                      )}
+                      <td className="px-3 py-2.5 font-semibold text-text sticky left-0 bg-card whitespace-nowrap">{g.playerName}</td>
                       <td className={clsx('px-3 py-2.5 text-center font-mono font-bold',
                         g.plusMinus > 0 ? 'text-green' : g.plusMinus < 0 ? 'text-red' : 'text-muted'
                       )}>{g.plusMinus > 0 ? `+${g.plusMinus}` : g.plusMinus}</td>
