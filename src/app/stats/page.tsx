@@ -204,7 +204,12 @@ export default function StatsPage() {
       : <ChevronUp className="w-3 h-3 text-accent" />
   }
 
-  const filteredStats = useMemo(() => {
+  useEffect(() => {
+    if (allGames.length > 0) {
+      setSelectedGames(new Set(allGames.map(g => g.key)))
+    }
+  }, [allGames])
+const filteredStats = useMemo(() => {
     return gameStats.filter(g => {
       const key = `${g.tournamentName}__${g.opponent}`
       return selectedGames.has(key) && g.playerName.toLowerCase().includes(search.toLowerCase())
