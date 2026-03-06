@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/db'
 import { ParsedPlayerGameStats } from '@/lib/parseCSV'
-import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronsUpDown, Filter, X } from 'lucide-react'
 import clsx from 'clsx'
 
 type ViewMode = 'season' | 'game'
@@ -58,8 +58,9 @@ export default function StatsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('season')
   const [sortKey, setSortKey] = useState<ColKey>('plusMinus')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
-  const [selectedTournament, setSelectedTournament] = useState<string>('all')
   const [search, setSearch] = useState('')
+  const [showGameFilter, setShowGameFilter] = useState(false)
+  const [selectedGames, setSelectedGames] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     async function load() {
@@ -72,20 +73,40 @@ export default function StatsPage() {
   }, [])
 
   const tournaments = useMemo(() => {
-        const t = Array.from(new Set(gameStats.map(g => g.tournamentName))).sort()
-
-    return t
+    return Array.from(new Set(gameStats.map(g => g.tournamentName))).sort()
   }, [gameStats])
 
-  const filteredStats = useMemo(() => {
-    const filtered = selectedTournament === 'all'
-      ? gameStats
-      : gameStats.filter(g => g.tournamentName === selectedTournament)
+  const allGames = useMemo(() => {
+    const seen = new Set<string>()
+    const games: { key: string; tournament: string; opponent: string; date: string }[] = []
+    gameStats.forEach(g => {
+      const key = `${g.tournamentName}__${g.opponent}`
+      if (!seen.has(key)) {
+        seen.add(key)
+        games.push({
+          key,
+          tournament: g.tournamentName,
+          opponent: g.opponent,
+          date: new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        })
+      }
+    })
+    return games.sort((a, b) => a.tournament.localeCompare(b.tournament) || a.opponent.localeCompare(b.opponent))
+  }, [gameStats])
 
-    return filtered.filter(g =>
-      g.playerName.toLowerCase().includes(search.toLowerCase())
-    )
-  }, [gameStats, selectedTournament, search])
+  // Auto-select all games when data loads
+  useEffect(() => {
+    if (allGames.length > 0 && selectedGames.size === 0) {
+      setSelectedGames(new Set(allGames.map(g => g.key)))
+    }
+  }, [allGames])
+
+  const filteredStats = useMemo(() => {
+    return gameStats.filter(g => {
+      const key = `${g.tournamentName}__${g.opponent}`
+      return selectedGames.has(key) && g.playerName.toLowerCase().includes(search.toLowerCase())
+    })
+  }, [gameStats, selectedGames, search])
 
   // Aggregate to season totals
   const seasonStats = useMemo((): SeasonStats[] => {
@@ -199,17 +220,107 @@ export default function StatsPage() {
           </button>
         </div>
 
-        {/* Tournament filter */}
-        <select
-          value={selectedTournament}
-          onChange={e => setSelectedTournament(e.target.value)}
-          className="bg-surface border border-border rounded-xl px-3 py-2 text-sm text-text focus:outline-none focus:border-accent"
-        >
-          <option value="all">All Tournaments</option>
-          {tournaments.map(t => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
+        {/* Games Filter */}
+        <div className="relative">
+          <button
+            onClick={() => setShowGameFilter(!showGameFilter)}
+            className="flex items-center gap-2 bg-surface border border-border rounded-xl px-3 py-2 text-sm text-text hover:border-accent transition-colors"
+          >
+            <Filter className="w-4 h-4 text-muted" />
+            Games Filter
+            {selectedGames.size < allGames.length && (
+              <span className="bg-accent text-background text-xs font-bold px-1.5 py-0.5 rounded-full">
+                {selectedGames.size}
+              </span>
+            )}
+          </button>
+
+          {showGameFilter && (
+            <div className="absolute top-10 left-0 z-50 bg-card border border-border rounded-xl shadow-xl w-72 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-text flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-accent" /> Games Filter
+                </h3>
+                <button onClick={() => setShowGameFilter(false)} className="text-muted hover:text-text">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex gap-2 mb-3">
+                <button
+                  onClick={() => setSelectedGames(new Set(allGames.map(g => g.key)))}
+                  className="flex-1 text-xs bg-accent text-background py-1.5 rounded-lg font-medium hover:opacity-90"
+                >
+                  Select All
+                </button>
+                <button
+                  onClick={() => setSelectedGames(new Set())}
+                  className="flex-1 text-xs bg-surface border border-border text-muted py-1.5 rounded-lg font-medium hover:text-text"
+                >
+                  Deselect All
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {tournaments.map(tournament => {
+                  const games = allGames.filter(g => g.tournament === tournament)
+                  const allSelected = games.every(g => selectedGames.has(g.key))
+                  const someSelected = games.some(g => selectedGames.has(g.key))
+                  return (
+                    <div key={tournament}>
+                      {/* Tournament row */}
+                      <label className="flex items-center gap-2 cursor-pointer py-1 hover:bg-surface rounded-lg px-2">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          ref={el => { if (el) el.indeterminate = someSelected && !allSelected }}
+                          onChange={() => {
+                            const next = new Set(selectedGames)
+                            if (allSelected) {
+                              games.forEach(g => next.delete(g.key))
+                            } else {
+                              games.forEach(g => next.add(g.key))
+                            }
+                            setSelectedGames(next)
+                          }}
+                          className="w-4 h-4 accent-accent"
+                        />
+                        <span className="text-sm font-semibold text-text">{tournament}</span>
+                      </label>
+                      {/* Individual games */}
+                      {games.map(game => (
+                        <label key={game.key} className="flex items-center justify-between gap-2 cursor-pointer py-1 pl-8 pr-2 hover:bg-surface rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedGames.has(game.key)}
+                              onChange={() => {
+                                const next = new Set(selectedGames)
+                                if (selectedGames.has(game.key)) next.delete(game.key)
+                                else next.add(game.key)
+                                setSelectedGames(next)
+                              }}
+                              className="w-3.5 h-3.5 accent-accent"
+                            />
+                            <span className="text-sm text-muted">{game.opponent}</span>
+                          </div>
+                          <span className="text-xs text-muted">{game.date}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )
+                })}
+              </div>
+
+              <button
+                onClick={() => setShowGameFilter(false)}
+                className="w-full mt-3 bg-surface border border-border text-text text-sm py-2 rounded-lg hover:border-accent transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Search */}
         <input
