@@ -280,7 +280,7 @@ export default function StatsPage() {
                     <th
                       key={col.key}
                       onClick={() => handleSort(col.key as ColKey)}
-                      title={'title' in col ? col.title : col.label}
+                                           title={col.title}
                       className="text-center px-3 py-3 text-muted font-medium cursor-pointer hover:text-text whitespace-nowrap"
                     >
                       <div className="flex items-center gap-1 justify-center">
