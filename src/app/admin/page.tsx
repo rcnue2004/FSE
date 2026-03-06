@@ -857,6 +857,17 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
             )}
 
             {csvPreview.length > 0 && (
+              <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setCsvPreview([])
+                  setCsvFile(null)
+                  setCsvSkipped([])
+                }}
+                className="flex-1 bg-surface border border-border text-muted py-3 rounded-xl font-semibold text-sm hover:text-text transition-colors"
+              >
+                Cancel
+              </button>
               <button
                 onClick={async () => {
                   setCsvImporting(true)
@@ -898,10 +909,11 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                   }
                 }}
                 disabled={csvImporting}
-                className="w-full bg-accent text-background py-3 rounded-xl font-semibold text-sm hover:bg-accent-dim transition-colors disabled:opacity-50"
+                className="flex-1 bg-accent text-background py-3 rounded-xl font-semibold text-sm hover:bg-accent-dim transition-colors disabled:opacity-50"
               >
                 {csvImporting ? `Importing...` : `Import ${csvPreview.length} Players`}
               </button>
+              </div>
             )}
           </div>
         </div>
