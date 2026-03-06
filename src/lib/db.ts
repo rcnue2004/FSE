@@ -239,3 +239,31 @@ export async function adminUpdateHolding(
   })
   await batch.commit()
 }
+export const undoTournamentStats = async (playerId: string, tournamentId: string) => {
+  const player = await getPlayer(playerId)
+  if (!player) throw new Error('Player not found')
+
+  const stat = player.tournamentStats.find(s => s.tournamentId === tournamentId)
+  if (!stat) throw new Error('Stat not found')
+
+  const newStats = player.tournamentStats.filter(s => s.tournamentId !== tournamentId)
+  const newPrice = Math.max(1, player.currentPrice - stat.priceChange)
+  const newHistory = player.priceHistory.filter(p => p.tournamentName !== stat.tournamentName || p.tournamentName === 'IPO')
+
+  await updateDoc(doc(db, 'players', playerId), {
+    tournamentStats: newStats,
+    currentPrice: Math.round(newPrice * 100) / 100,
+    previousPrice: Math.round(newPrice * 100) / 100,
+    priceHistory: newHistory,
+  })
+}
+
+export const deleteGameStats = async (tournamentName: string, opponent?: string) => {
+  const q = opponent
+    ? query(collection(db, 'gameStats'), where('tournamentName', '==', tournamentName), where('opponent', '==', opponent))
+    : query(collection(db, 'gameStats'), where('tournamentName', '==', tournamentName))
+  const snap = await getDocs(q)
+  const batch = writeBatch(db)
+  snap.docs.forEach(d => batch.delete(d.ref))
+  await batch.commit()
+}

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { getAllPlayers, submitTournamentStats, getMarketSettings, updateMarketSettings, createPlayer, adminUpdateHolding, getLeaderboard, updatePlayer } from '@/lib/db'
+import { getAllPlayers, submitTournamentStats, getMarketSettings, updateMarketSettings, createPlayer, adminUpdateHolding, getLeaderboard, updatePlayer, undoTournamentStats, deleteGameStats } from '@/lib/db'
 
 import { Player, MarketSettings, WeightConfig } from '@/types'
 import { formatPrice } from '@/lib/pricing'
@@ -18,7 +18,7 @@ export default function AdminPage() {
   const [players, setPlayers] = useState<Player[]>([])
   const [settings, setSettings] = useState<MarketSettings | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'stats' | 'weights' | 'addPlayer' | 'market' | 'holdings' | 'warnings' | 'csvImport'>('stats')
+  const [activeTab, setActiveTab] = useState<'stats' | 'weights' | 'addPlayer' | 'market' | 'holdings' | 'warnings' | 'csvImport' | 'undo'>('stats')
   const [leaderboard, setLeaderboard] = useState<{uid: string; displayName: string; totalValue: number; cash: number; holdings: Record<string, number>}[]>([])
   const [selectedUser, setSelectedUser] = useState<string | null>(null)
   const [editingHolding, setEditingHolding] = useState<{playerId: string; value: string} | null>(null)
@@ -35,6 +35,7 @@ const [csvImporting, setCsvImporting] = useState(false)
   const [csvPreview, setCsvPreview] = useState<any[]>([])
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [csvSkipped, setCsvSkipped] = useState<string[]>([])
+  const [statsOnly, setStatsOnly] = useState(false)
   const [tournamentDate, setTournamentDate] = useState(new Date().toISOString().split('T')[0])
   const [goals, setGoals] = useState(0)
   const [assists, setAssists] = useState(0)
@@ -148,6 +149,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
     { id: 'market', label: 'Market Control' },
     { id: 'warnings', label: 'Warnings' },
     { id: 'csvImport', label: 'CSV Import' },
+    { id: 'undo', label: 'Undo' },
   ] as const
 
   return (
@@ -791,11 +793,11 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                     const alreadyExists = player.tournamentStats.some(
                       t => t.tournamentName.toLowerCase() === stat.tournamentName.toLowerCase()
                     )
-                    if (alreadyExists) {
+                    if (alreadyExists && !statsOnly) {
                       skipped.push(`${stat.playerName} — ${stat.tournamentName} (already uploaded)`)
                       continue
                     }
-                    toImport.push({ ...stat, playerId: player.id })
+                    toImport.push({ ...stat, playerId: player.id, isDuplicate: alreadyExists })
                   }
 
                   setCsvPreview(toImport)
@@ -804,6 +806,18 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
               />
             </label>
 
+<label className="flex items-center gap-3 cursor-pointer bg-surface border border-border rounded-xl px-4 py-3">
+              <input
+                type="checkbox"
+                checked={statsOnly}
+                onChange={e => setStatsOnly(e.target.checked)}
+                className="w-4 h-4 accent-accent"
+              />
+              <div>
+                <p className="text-sm font-medium text-text">Stats only — don't update stock prices</p>
+                <p className="text-xs text-muted">Use this to import historical stats without affecting current prices</p>
+              </div>
+            </label>
             {csvPreview.length > 0 && (
               <div>
                 <p className="text-sm font-medium text-text mb-2">
@@ -849,16 +863,18 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                   let imported = 0
                   try {
                     for (const stat of csvPreview) {
-                      await submitTournamentStats(stat.playerId, {
-                        tournamentId: `${stat.tournamentName}-${stat.date}`,
-                        tournamentName: stat.tournamentName,
-                        date: stat.date,
-                        goals: stat.goals,
-                        assists: stat.assists,
-                        ds: stat.ds,
-                        turns: stat.turns,
-                        priceChange: 0,
-                      }, weights)
+                      if (!statsOnly && !stat.isDuplicate) {
+                        await submitTournamentStats(stat.playerId, {
+                          tournamentId: `${stat.tournamentName}-${stat.date}`,
+                          tournamentName: stat.tournamentName,
+                          date: stat.date,
+                          goals: stat.goals,
+                          assists: stat.assists,
+                          ds: stat.ds,
+                          turns: stat.turns,
+                          priceChange: 0,
+                        }, weights)
+                      }
                       imported++
                     }
                        // Save game stats to Firestore
@@ -886,6 +902,61 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
               >
                 {csvImporting ? `Importing...` : `Import ${csvPreview.length} Players`}
               </button>
+            )}
+          </div>
+        </div>
+      )}  {/* Undo */}
+      {activeTab === 'undo' && (
+        <div className="bg-card border border-border rounded-2xl p-6">
+          <h2 className="text-lg font-semibold mb-2">Undo Stat Submissions</h2>
+          <p className="text-sm text-muted mb-6">
+            Remove a tournament's stats from a player and revert their stock price to what it was before.
+          </p>
+          <div className="space-y-3">
+            {players
+              .filter(p => p.tournamentStats && p.tournamentStats.length > 0)
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map(player => (
+                <div key={player.id} className="bg-surface rounded-xl overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border">
+                    <p className="font-semibold text-text">{player.name}</p>
+                    <p className="text-xs text-muted font-mono">{formatPrice(player.currentPrice)}</p>
+                  </div>
+                  <div className="divide-y divide-border/50">
+                    {player.tournamentStats.map(stat => (
+                      <div key={stat.tournamentId} className="flex items-center justify-between px-4 py-3">
+                        <div>
+                          <p className="text-sm text-text font-medium">{stat.tournamentName}</p>
+                          <p className="text-xs text-muted font-mono">
+                            G{stat.goals} A{stat.assists} D{stat.ds} T{stat.turns} ·{' '}
+                            <span className={stat.priceChange >= 0 ? 'text-green' : 'text-red'}>
+                              {stat.priceChange >= 0 ? '+' : ''}{formatPrice(stat.priceChange)}
+                            </span>
+                          </p>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Undo ${stat.tournamentName} stats for ${player.name}? Price will revert by ${formatPrice(stat.priceChange)}.`)) return
+                            try {
+                              await undoTournamentStats(player.id, stat.tournamentId)
+                              await deleteGameStats(stat.tournamentName)
+                              toast.success(`Undone ${stat.tournamentName} for ${player.name}`)
+                              load()
+                            } catch (e: any) {
+                              toast.error(e.message)
+                            }
+                          }}
+                          className="text-xs bg-red/20 text-red px-3 py-1.5 rounded-lg hover:bg-red/30 transition-colors font-medium"
+                        >
+                          Undo
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            {players.filter(p => p.tournamentStats && p.tournamentStats.length > 0).length === 0 && (
+              <p className="text-muted text-sm text-center py-8">No stat submissions yet</p>
             )}
           </div>
         </div>
