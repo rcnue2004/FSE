@@ -316,11 +316,6 @@ export default function StatsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface">
-                  {COLUMNS.map(col => (
-                    col.key === 'playerName' || viewMode === 'game'
-                      ? null
-                      : null
-                  ))}
                   <th
                     onClick={() => handleSort('playerName')}
                     className="text-left px-3 py-3 text-muted font-medium cursor-pointer hover:text-text whitespace-nowrap sticky left-0 bg-surface z-10"
