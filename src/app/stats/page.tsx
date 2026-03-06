@@ -368,7 +368,8 @@ export default function StatsPage() {
                       <td className="px-3 py-2.5 text-center font-mono text-muted">{g.dPointsPlayed}</td>
                       <td className="px-3 py-2.5 text-center font-mono text-muted">{g.oPointsPlayed}</td>
                       <td className="px-3 py-2.5 text-center font-mono">{g.pointsPlayed}</td>
-                      {!isGame && <td className="px-3 py-2.5 text-center font-mono text-muted">{g.gamesPlayed}</td>}
+                      <td className="px-3 py-2.5 text-center font-mono text-muted">{g.gamesPlayed}</td>
+
                     </tr>
                   )
                 })}
