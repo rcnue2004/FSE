@@ -10,7 +10,7 @@ import toast from 'react-hot-toast'
 import { Shield, Plus, Settings, Lock, Unlock, Users, Edit2, Check, X, AlertTriangle, Upload } from 'lucide-react'
 import clsx from 'clsx'
 import { DEFAULT_STARTING_PRICE, MAX_SHARES_PER_PLAYER } from '@/lib/pricing'
-import { parseStatsCSV } from '@/lib/parseCSV'
+import { parseFullCSV } from '@/lib/parseCSV'
 
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth()
@@ -773,7 +773,9 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                   setCsvSkipped([])
 
                   const text = await file.text()
-                  const parsed = parseStatsCSV(text)
+                  const { tournamentStats: parsed, gameStats: parsedGames } = parseFullCSV(text)
+                  // Store game stats for saving later
+                  ;(window as any).__pendingGameStats = parsedGames
 
                   const skipped: string[] = []
                   const toImport: any[] = []
@@ -858,6 +860,15 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                         priceChange: 0,
                       }, weights)
                       imported++
+                    }
+                       // Save game stats to Firestore
+                    const { collection: col, addDoc } = await import('firebase/firestore')
+                    const { db: firedb } = await import('@/lib/db')
+                    const pendingGames = (window as any).__pendingGameStats || []
+                    for (const gs of pendingGames) {
+                      if (csvPreview.some((s: any) => s.playerName === gs.playerName && s.tournamentName === gs.tournamentName)) {
+                        await addDoc(col(firedb, 'gameStats'), gs)
+                      }
                     }
                     toast.success(`Imported stats for ${imported} players!`)
                     setCsvPreview([])

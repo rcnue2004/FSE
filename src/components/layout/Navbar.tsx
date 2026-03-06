@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { useState, useEffect } from 'react'
-import { Disc, LayoutDashboard, Briefcase, Shield, LogOut, LogIn, Menu, X, TrendingUp, TrendingDown } from 'lucide-react'
+import { Disc, LayoutDashboard, Briefcase, Shield, LogOut, LogIn, Menu, X, TrendingUp, TrendingDown, BarChart2 } from 'lucide-react'
 import { formatPrice, calcPercentChange } from '@/lib/pricing'
 import { getAllPlayers } from '@/lib/db'
 import { Player } from '@/types'
@@ -36,6 +36,9 @@ export default function Navbar() {
             <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted">
               <Link href="/" className="flex items-center gap-1.5 hover:text-text transition-colors">
                 <LayoutDashboard className="w-4 h-4" /> Market
+              </Link>
+              <Link href="/stats" className="flex items-center gap-1.5 hover:text-text transition-colors">
+                <BarChart2 className="w-4 h-4" /> Stats
               </Link>
               {user && (
                 <Link href="/portfolio" className="flex items-center gap-1.5 hover:text-text transition-colors">
@@ -86,6 +89,9 @@ export default function Navbar() {
           <div className="md:hidden border-t border-border px-4 py-4 flex flex-col gap-4 text-sm">
             <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
               <LayoutDashboard className="w-4 h-4" /> Market
+            </Link>
+            <Link href="/stats" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
+              <BarChart2 className="w-4 h-4" /> Stats
             </Link>
             {user && (
               <Link href="/portfolio" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
