@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/db'
 import { ParsedPlayerGameStats } from '@/lib/parseCSV'
@@ -51,6 +51,8 @@ const COLUMNS = [
 
 type ColKey = typeof COLUMNS[number]['key']
 
+const statsCache = { current: null as null | { gameStats: ParsedPlayerGameStats[], historicalStats: (ParsedPlayerGameStats & { season: string })[] } }
+
 export default function StatsPage() {
   const [gameStats, setGameStats] = useState<ParsedPlayerGameStats[]>([])
   const [historicalStats, setHistoricalStats] = useState<(ParsedPlayerGameStats & { season: string })[]>([])
@@ -67,8 +69,16 @@ export default function StatsPage() {
   const [histSortKey, setHistSortKey] = useState<ColKey>('plusMinus')
   const [histSortDir, setHistSortDir] = useState<SortDir>('desc')
   const [histSearch, setHistSearch] = useState('')
+  const statsCache = useRef<null | { gameStats: ParsedPlayerGameStats[], historicalStats: (ParsedPlayerGameStats & { season: string })[] }>(null)
 
   useEffect(() => {
+    // Use module-level cache to avoid re-fetching on every page visit
+    if (statsCache.current) {
+      setGameStats(statsCache.current.gameStats)
+      setHistoricalStats(statsCache.current.historicalStats)
+      setLoading(false)
+      return
+    }
     async function load() {
       const [currentSnap, histSnap] = await Promise.all([
         getDocs(collection(db, 'gameStats')),
@@ -76,6 +86,7 @@ export default function StatsPage() {
       ])
       const currentData = currentSnap.docs.map(d => d.data() as ParsedPlayerGameStats)
       const histData = histSnap.docs.map(d => d.data() as ParsedPlayerGameStats & { season: string })
+      statsCache.current = { gameStats: currentData, historicalStats: histData }
       setGameStats(currentData)
       setHistoricalStats(histData)
       setLoading(false)
