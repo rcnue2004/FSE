@@ -49,7 +49,7 @@ export async function submitTournamentStats(
   if (!player) throw new Error('Player not found')
 
   const priceChange = calculatePriceChange(stats, weights)
-  const newPrice = Math.max(1, player.currentPrice + priceChange)
+  const newPrice = player.currentPrice + priceChange
 
   const updatedStats = [...player.tournamentStats, { ...stats, priceChange }]
   const updatedHistory = [
