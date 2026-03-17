@@ -46,7 +46,7 @@ export function recalculatePriceFromHistory(
 
   for (const stat of sorted) {
     const change = calculatePriceChange(stat, weights)
-    price = Math.max(1, price + change) // floor at $1
+    price = price + change
     priceHistory.push({
       date: stat.date,
       price: Math.round(price * 100) / 100,

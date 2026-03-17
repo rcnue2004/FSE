@@ -138,8 +138,9 @@ export async function executeTrade(
   const holdings = user.portfolio.holdings
 
   if (type === 'buy') {
-    if (user.portfolio.cash < total) throw new Error('Insufficient funds')
-    if (player.sharesAvailable < shares) throw new Error('Not enough shares available')
+  if (player.currentPrice < 0) throw new Error('Cannot buy a stock with a negative price')
+  if (user.portfolio.cash < total) throw new Error('Insufficient funds')
+  if (player.sharesAvailable < shares) throw new Error('Not enough shares available')
     const userHoldings = holdings[playerId] || 0
     if (userHoldings + shares > MAX_SHARES_PER_PLAYER) throw new Error(`Cannot own more than ${MAX_SHARES_PER_PLAYER} shares of one player`)
 
@@ -247,7 +248,7 @@ export const undoTournamentStats = async (playerId: string, tournamentId: string
   if (!stat) throw new Error('Stat not found')
 
   const newStats = player.tournamentStats.filter(s => s.tournamentId !== tournamentId)
-  const newPrice = Math.max(1, player.currentPrice - stat.priceChange)
+  const newPrice = player.currentPrice - stat.priceChange
   const newHistory = player.priceHistory.filter(p => p.tournamentName !== stat.tournamentName || p.tournamentName === 'IPO')
 
   await updateDoc(doc(db, 'players', playerId), {

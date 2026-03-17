@@ -56,7 +56,7 @@ export default function PortfolioPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {[
           { label: 'Total Value', val: formatPrice(totalValue), color: 'text-accent' },
-          { label: 'Cash', val: formatPrice(user.portfolio.cash), color: 'text-text' },
+          { label: 'Cash', val: formatPrice(user.portfolio.cash), color: user.portfolio.cash < 0 ? 'text-red' : 'text-text' },
           { label: 'Stocks', val: formatPrice(portfolioStockValue), color: 'text-text' },
           { label: 'P&L', val: `${totalPnl >= 0 ? '+' : ''}${formatPrice(totalPnl)} (${totalPct}%)`, color: totalPnl >= 0 ? 'text-green' : 'text-red' },
         ].map(({ label, val, color }) => (
@@ -93,7 +93,7 @@ export default function PortfolioPage() {
                         <p className="text-xs text-muted">{qty} share{qty > 1 ? 's' : ''} · {p.team}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-mono font-bold">{formatPrice(value)}</p>
+                        <p className={clsx('font-mono font-bold', value < 0 ? 'text-red' : 'text-text')}>{formatPrice(value)}</p>
                         <div className={clsx(
                           'flex items-center gap-1 justify-end text-sm',
                           pct >= 0 ? 'text-green' : 'text-red'

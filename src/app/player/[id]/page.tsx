@@ -90,6 +90,15 @@ export default function PlayerPage() {
         </div>
       </div>
 
+{player.currentPrice < 0 && (
+        <div className="bg-red/10 border border-red/30 rounded-xl p-4 mb-4 flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-red shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-red">Negative Stock</p>
+            <p className="text-xs text-muted">This player's price is negative. Buying is disabled. Selling will subtract from your cash balance.</p>
+          </div>
+        </div>
+      )}
       {/* Chart */}
       <div className="bg-card border border-border rounded-xl p-4 mb-6" style={{ height: 280 }}>
         <h2 className="text-sm font-medium text-muted mb-3">Price History</h2>
@@ -166,7 +175,7 @@ export default function PlayerPage() {
               <div className="bg-surface rounded-lg p-3 text-sm">
                 <div className="flex justify-between text-muted mb-1">
                   <span>Your cash</span>
-                  <span className="font-mono text-text">{formatPrice(user.portfolio.cash)}</span>
+                  <span className={clsx('font-mono', user.portfolio.cash < 0 ? 'text-red' : 'text-text')}>{formatPrice(user.portfolio.cash)}</span>
                 </div>
                 <div className="flex justify-between text-muted">
                   <span>Your shares</span>
@@ -200,7 +209,7 @@ export default function PlayerPage() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => handleTrade('buy')}
-                  disabled={trading || player.sharesAvailable === 0}
+                  disabled={trading || player.sharesAvailable === 0 || player.currentPrice < 0}
                   className="bg-green text-background py-2.5 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-40"
                 >
                   {trading ? '...' : 'Buy'}

@@ -27,7 +27,8 @@ export default function PlayerCard({ player }: Props) {
     <Link href={`/player/${player.id}`}>
       <div
         className={clsx(
-          'rounded-xl p-4 border border-border bg-card hover:border-accent/40 transition-all duration-200 cursor-pointer hover:scale-[1.01]',
+          'rounded-xl p-4 border bg-card hover:border-accent/40 transition-all duration-200 cursor-pointer hover:scale-[1.01]',
+          player.currentPrice < 0 ? 'border-red/50' : 'border-border',
           flash === 'up' && 'price-up',
           flash === 'down' && 'price-down'
         )}
