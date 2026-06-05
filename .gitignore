@@ -39,3 +39,4 @@ serviceAccountKey.json
 
 # Local scripts (not part of the build)
 scripts/migrate.ts
+/migrate.js
