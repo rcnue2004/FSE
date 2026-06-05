@@ -35,7 +35,7 @@ export default function Navbar() {
               <span className="hidden sm:block">Frisbee<span className="text-text">Exchange</span></span>
             </Link>
 
-            {/* Desktop Nav */}
+            {/* Nav links — visible on md+, hidden on mobile (use hamburger) */}
             <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted">
               {currentGameId ? (
                 <>
@@ -61,6 +61,16 @@ export default function Navbar() {
                 </>
               ) : null}
             </div>
+
+            {/* Switch Game button — always visible on mobile when in a game */}
+            {currentGameId && (
+              <Link
+                href="/games"
+                className="md:hidden flex items-center gap-1.5 text-xs bg-surface border border-border px-2.5 py-1 rounded-lg text-muted hover:text-text hover:border-accent transition-colors"
+              >
+                <Disc className="w-3.5 h-3.5" /> Switch
+              </Link>
+            )}
 
             {/* Right side */}
             <div className="hidden md:flex items-center gap-4">
@@ -88,7 +98,7 @@ export default function Navbar() {
             </div>
 
             {/* Mobile menu toggle */}
-            <button className="md:hidden text-muted" onClick={() => setMenuOpen(!menuOpen)}>
+            <button className="md:hidden flex items-center gap-1 text-muted hover:text-text transition-colors" onClick={() => setMenuOpen(!menuOpen)}>
               {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
