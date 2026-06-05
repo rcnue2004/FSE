@@ -19,7 +19,7 @@
 import * as admin from 'firebase-admin'
 
 // ── SET THIS before running ───────────────────────────────────────────────────
-const GAME_ID = 'your-game-id-here'
+const GAME_ID = 'pICBfYbIZPZYe3lAmLU1'
 // ─────────────────────────────────────────────────────────────────────────────
 
 admin.initializeApp({
