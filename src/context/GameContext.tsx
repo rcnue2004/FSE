@@ -34,6 +34,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     else localStorage.removeItem('currentGameId')
   }
 
+  // Re-read localStorage after hydration (SSR renders with null, client needs to sync)
+  useEffect(() => {
+    const saved = localStorage.getItem('currentGameId')
+    if (saved) setCurrentGameIdState(saved)
+  }, [])
+
   useEffect(() => {
     if (!currentGameId) { setCurrentGame(null); return }
     setLoading(true)
