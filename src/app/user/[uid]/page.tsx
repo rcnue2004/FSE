@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { getUser, getAllPlayers } from '@/lib/db'
+import { getUser, getAllPlayers, getGamePortfolio } from '@/lib/db'
+import { useGame } from '@/context/GameContext'
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/db'
 import { User, Player, Trade } from '@/types'
@@ -19,18 +20,23 @@ export default function UserProfilePage() {
   const [trades, setTrades] = useState<Trade[]>([])
   const [loading, setLoading] = useState(true)
   const [showTrades, setShowTrades] = useState(false)
+  const { currentGameId } = useGame()
 
   useEffect(() => {
     async function load() {
-      const [u, ps] = await Promise.all([getUser(uid), getAllPlayers()])
+      const [u, ps] = await Promise.all([getUser(uid), getAllPlayers(currentGameId!)])
       const map: Record<string, Player> = {}
       ps.forEach(p => map[p.id] = p)
       setPlayers(map)
       setProfileUser(u)
+      if (currentGameId && u) {
+        const gp = await getGamePortfolio(currentGameId, uid)
+        if (gp) u.portfolio = { ...u.portfolio, ...gp }
+      }
 
       // Get trade history for this user
       const tradesSnap = await getDocs(
-        query(collection(db, 'trades'),
+        query(collection(db, `games/${currentGameId}/trades`),
           where('userId', '==', uid),
           orderBy('timestamp', 'desc')
         )

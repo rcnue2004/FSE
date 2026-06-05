@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { Disc, LayoutDashboard, Briefcase, Shield, LogOut, LogIn, Menu, X, TrendingUp, TrendingDown, BarChart2 } from 'lucide-react'
 import { formatPrice, calcPercentChange } from '@/lib/pricing'
 import { getAllPlayers } from '@/lib/db'
+import { useGame } from '@/context/GameContext'
 import { Player } from '@/types'
 import clsx from 'clsx'
 
@@ -12,14 +13,15 @@ export default function Navbar() {
   const { user, logout, loading } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [players, setPlayers] = useState<Player[]>([])
+  const { currentGameId, currentGame } = useGame()
 
   useEffect(() => {
-    getAllPlayers().then(setPlayers)
+    if (currentGameId) getAllPlayers(currentGameId).then(setPlayers)
     const interval = setInterval(() => {
-      getAllPlayers().then(setPlayers)
+      if (currentGameId) getAllPlayers(currentGameId).then(setPlayers)
     }, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [currentGameId])
 
   return (
     <>
@@ -45,6 +47,8 @@ export default function Navbar() {
               <Link href="/stats" className="flex items-center gap-1.5 hover:text-text transition-colors">
                 <BarChart2 className="w-4 h-4" /> Stats
               </Link>
+              {currentGame && <span className="text-xs bg-surface border border-border px-2 py-1 rounded-lg text-muted">{currentGame.name}</span>}
+              <Link href="/games" className="flex items-center gap-1.5 hover:text-text transition-colors"><Disc className="w-4 h-4" /> Switch Game</Link>
               {user?.isAdmin && (
                 <Link href="/admin" className="flex items-center gap-1.5 text-yellow-400 hover:text-yellow-300 transition-colors">
                   <Shield className="w-4 h-4" /> Admin
@@ -98,6 +102,7 @@ export default function Navbar() {
                 <Briefcase className="w-4 h-4" /> Portfolio
               </Link>
             )}
+            <Link href="/games" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text"><Disc className="w-4 h-4" /> Switch Game</Link>
             {user?.isAdmin && (
               <Link href="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-yellow-400">
                 <Shield className="w-4 h-4" /> Admin

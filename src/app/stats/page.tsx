@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { ParsedPlayerGameStats } from '@/lib/parseCSV'
 import { ChevronUp, ChevronDown, ChevronsUpDown, Filter, X, Clock } from 'lucide-react'
 import clsx from 'clsx'
+import { useGame } from '@/context/GameContext'
 
 type SortDir = 'asc' | 'desc'
 
@@ -70,6 +71,7 @@ export default function StatsPage() {
   const [histSortDir, setHistSortDir] = useState<SortDir>('desc')
   const [histSearch, setHistSearch] = useState('')
   const statsCache = useRef<null | { gameStats: ParsedPlayerGameStats[], historicalStats: (ParsedPlayerGameStats & { season: string })[] }>(null)
+  const { currentGameId } = useGame()
 
   useEffect(() => {
     // Use module-level cache to avoid re-fetching on every page visit
@@ -80,9 +82,10 @@ export default function StatsPage() {
       return
     }
     async function load() {
+      if (!currentGameId) return
       const [currentSnap, histSnap] = await Promise.all([
-        getDocs(collection(db, 'gameStats')),
-        getDocs(collection(db, 'historicalStats')),
+        getDocs(collection(db, `games/${currentGameId}/gameStats`)),
+        getDocs(collection(db, `games/${currentGameId}/historicalStats`)),
       ])
       const currentData = currentSnap.docs.map(d => d.data() as ParsedPlayerGameStats)
       const histData = histSnap.docs.map(d => d.data() as ParsedPlayerGameStats & { season: string })
@@ -92,7 +95,7 @@ export default function StatsPage() {
       setLoading(false)
     }
     load()
-  }, [])
+  }, [currentGameId])
 
   const tournaments = useMemo(() => {
     return Array.from(new Set(gameStats.map(g => g.tournamentName))).sort()
