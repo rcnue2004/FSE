@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { getAllPlayers, db } from '@/lib/db'
 import { useGame } from '@/context/GameContext'
 import { Player, Trade } from '@/types'
@@ -21,6 +22,13 @@ export default function DashboardPage() {
   const [filter, setFilter] = useState<'all' | 'up' | 'down'>('all')
   const [trades, setTrades] = useState<Trade[]>([])
   const { currentGameId, currentGame } = useGame()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!currentGameId) {
+      router.push('/games')
+    }
+  }, [currentGameId])
 
   const load = async () => {
     if (!currentGameId) return
