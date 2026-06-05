@@ -13,10 +13,11 @@ export default function Navbar() {
   const { user, logout, loading } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [players, setPlayers] = useState<Player[]>([])
-  const { currentGameId, currentGame } = useGame()
+  const { currentGameId } = useGame()
 
   useEffect(() => {
     if (currentGameId) getAllPlayers(currentGameId).then(setPlayers)
+    else setPlayers([])
     const interval = setInterval(() => {
       if (currentGameId) getAllPlayers(currentGameId).then(setPlayers)
     }, 30000)
@@ -36,24 +37,29 @@ export default function Navbar() {
 
             {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted">
-              <Link href="/" className="flex items-center gap-1.5 hover:text-text transition-colors">
-                <LayoutDashboard className="w-4 h-4" /> Market
-              </Link>
-              {user && (
-                <Link href="/portfolio" className="flex items-center gap-1.5 hover:text-text transition-colors">
-                  <Briefcase className="w-4 h-4" /> Portfolio
-                </Link>
-              )}
-              <Link href="/stats" className="flex items-center gap-1.5 hover:text-text transition-colors">
-                <BarChart2 className="w-4 h-4" /> Stats
-              </Link>
-              {currentGame && <span className="text-xs bg-surface border border-border px-2 py-1 rounded-lg text-muted">{currentGame.name}</span>}
-              <Link href="/games" className="flex items-center gap-1.5 hover:text-text transition-colors"><Disc className="w-4 h-4" /> Switch Game</Link>
-              {user?.isAdmin && (
-                <Link href="/admin" className="flex items-center gap-1.5 text-yellow-400 hover:text-yellow-300 transition-colors">
-                  <Shield className="w-4 h-4" /> Admin
-                </Link>
-              )}
+              {currentGameId ? (
+                <>
+                  <Link href="/" className="flex items-center gap-1.5 hover:text-text transition-colors">
+                    <LayoutDashboard className="w-4 h-4" /> Market
+                  </Link>
+                  {user && (
+                    <Link href="/portfolio" className="flex items-center gap-1.5 hover:text-text transition-colors">
+                      <Briefcase className="w-4 h-4" /> Portfolio
+                    </Link>
+                  )}
+                  <Link href="/stats" className="flex items-center gap-1.5 hover:text-text transition-colors">
+                    <BarChart2 className="w-4 h-4" /> Stats
+                  </Link>
+                  {user?.isAdmin && (
+                    <Link href="/admin" className="flex items-center gap-1.5 text-yellow-400 hover:text-yellow-300 transition-colors">
+                      <Shield className="w-4 h-4" /> Admin
+                    </Link>
+                  )}
+                  <Link href="/games" className="text-xs bg-surface border border-border px-2.5 py-1 rounded-lg text-muted hover:text-text hover:border-accent transition-colors">
+                    Switch Game
+                  </Link>
+                </>
+              ) : null}
             </div>
 
             {/* Right side */}
@@ -91,23 +97,29 @@ export default function Navbar() {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="md:hidden border-t border-border px-4 py-4 flex flex-col gap-4 text-sm">
-            <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
-              <LayoutDashboard className="w-4 h-4" /> Market
-            </Link>
-            <Link href="/stats" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
-              <BarChart2 className="w-4 h-4" /> Stats
-            </Link>
-            {user && (
-              <Link href="/portfolio" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
-                <Briefcase className="w-4 h-4" /> Portfolio
-              </Link>
-            )}
-            <Link href="/games" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text"><Disc className="w-4 h-4" /> Switch Game</Link>
-            {user?.isAdmin && (
-              <Link href="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-yellow-400">
-                <Shield className="w-4 h-4" /> Admin
-              </Link>
-            )}
+            {currentGameId ? (
+              <>
+                <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
+                  <LayoutDashboard className="w-4 h-4" /> Market
+                </Link>
+                <Link href="/stats" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
+                  <BarChart2 className="w-4 h-4" /> Stats
+                </Link>
+                {user && (
+                  <Link href="/portfolio" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
+                    <Briefcase className="w-4 h-4" /> Portfolio
+                  </Link>
+                )}
+                {user?.isAdmin && (
+                  <Link href="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-yellow-400">
+                    <Shield className="w-4 h-4" /> Admin
+                  </Link>
+                )}
+                <Link href="/games" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
+                  <Disc className="w-4 h-4" /> Switch Game
+                </Link>
+              </>
+            ) : null}
             {user ? (
               <button onClick={logout} className="flex items-center gap-2 text-red text-left">
                 <LogOut className="w-4 h-4" /> Sign Out

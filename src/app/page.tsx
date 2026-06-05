@@ -21,14 +21,14 @@ export default function DashboardPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [filter, setFilter] = useState<'all' | 'up' | 'down'>('all')
   const [trades, setTrades] = useState<Trade[]>([])
-  const { currentGameId, currentGame } = useGame()
+  const { currentGameId, currentGame, hydrated } = useGame()
   const router = useRouter()
 
   useEffect(() => {
-    if (!currentGameId) {
+    if (hydrated && !currentGameId) {
       router.push('/games')
     }
-  }, [currentGameId])
+  }, [hydrated, currentGameId])
 
   const load = async () => {
     if (!currentGameId) return

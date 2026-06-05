@@ -8,6 +8,7 @@ interface GameContextValue {
   currentGameId: string | null
   setCurrentGameId: (id: string | null) => void
   loading: boolean
+  hydrated: boolean
 }
 
 const GameContext = createContext<GameContextValue>({
@@ -15,12 +16,14 @@ const GameContext = createContext<GameContextValue>({
   currentGameId: null,
   setCurrentGameId: () => {},
   loading: true,
+  hydrated: false,
 })
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const [currentGameId, setCurrentGameIdState] = useState<string | null>(null)
   const [currentGame, setCurrentGame] = useState<Game | null>(null)
   const [loading, setLoading] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
 
   const setCurrentGameId = (id: string | null) => {
     setCurrentGameIdState(id)
@@ -31,6 +34,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const saved = localStorage.getItem('currentGameId')
     if (saved) setCurrentGameIdState(saved)
+    setHydrated(true)
   }, [])
 
   useEffect(() => {
@@ -43,7 +47,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [currentGameId])
 
   return (
-    <GameContext.Provider value={{ currentGame, currentGameId, setCurrentGameId, loading }}>
+    <GameContext.Provider value={{ currentGame, currentGameId, setCurrentGameId, loading, hydrated }}>
       {children}
     </GameContext.Provider>
   )

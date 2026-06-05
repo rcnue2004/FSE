@@ -10,7 +10,7 @@ import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
 export default function GamesPage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { setCurrentGameId } = useGame()
   const router = useRouter()
   const [games, setGames] = useState<Game[]>([])
@@ -33,6 +33,10 @@ export default function GamesPage() {
     setGames(myGames)
     setLoading(false)
   }
+
+  useEffect(() => {
+    if (!authLoading && !user) router.push('/auth')
+  }, [user, authLoading])
 
   useEffect(() => {
     if (user) load()
@@ -91,7 +95,7 @@ export default function GamesPage() {
     load()
   }
 
-  if (!user) return null
+  if (authLoading || !user) return null
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
