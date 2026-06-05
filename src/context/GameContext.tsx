@@ -20,22 +20,19 @@ const GameContext = createContext<GameContextValue>({
 })
 
 export function GameProvider({ children }: { children: ReactNode }) {
-  const [currentGameId, setCurrentGameIdState] = useState<string | null>(null)
+  const [currentGameId, setCurrentGameIdState] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('currentGameId')
+    return null
+  })
   const [currentGame, setCurrentGame] = useState<Game | null>(null)
   const [loading, setLoading] = useState(false)
-  const [hydrated, setHydrated] = useState(false)
+  const hydrated = true  // always ready since we read localStorage in useState initializer
 
   const setCurrentGameId = (id: string | null) => {
     setCurrentGameIdState(id)
     if (id) localStorage.setItem('currentGameId', id)
     else localStorage.removeItem('currentGameId')
   }
-
-  useEffect(() => {
-    const saved = localStorage.getItem('currentGameId')
-    if (saved) setCurrentGameIdState(saved)
-    setHydrated(true)
-  }, [])
 
   useEffect(() => {
     if (!currentGameId) { setCurrentGame(null); return }
