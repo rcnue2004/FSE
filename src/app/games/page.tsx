@@ -75,8 +75,8 @@ export default function GamesPage() {
   }
 
   const handleEnter = (game: Game) => {
-    setCurrentGameId(game.id)
-    router.push('/')
+    localStorage.setItem('currentGameId', game.id)
+    window.location.href = '/'
   }
 
   const handleSaveEdit = async (gameId: string) => {

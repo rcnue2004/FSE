@@ -74,7 +74,8 @@ export default function StatsPage() {
   const { currentGameId } = useGame()
 
   useEffect(() => {
-    // Use module-level cache to avoid re-fetching on every page visit
+    if (!currentGameId) return
+    // Use ref cache to avoid re-fetching on every page visit within the same session
     if (statsCache.current) {
       setGameStats(statsCache.current.gameStats)
       setHistoricalStats(statsCache.current.historicalStats)
@@ -82,7 +83,6 @@ export default function StatsPage() {
       return
     }
     async function load() {
-      if (!currentGameId) return
       const [currentSnap, histSnap] = await Promise.all([
         getDocs(collection(db, `games/${currentGameId}/gameStats`)),
         getDocs(collection(db, `games/${currentGameId}/historicalStats`)),
