@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { getPlayer } from '@/lib/db'
-import { executeTrade } from '@/lib/db'
+import { getPlayer, executeTrade, getGamePortfolio } from '@/lib/db'
+import { useGame } from '@/context/GameContext'
 import { Player } from '@/types'
 import PriceChart from '@/components/charts/PriceChart'
 import { useAuth } from '@/hooks/useAuth'
@@ -20,21 +20,26 @@ export default function PlayerPage() {
   const [loading, setLoading] = useState(true)
   const [tradeShares, setTradeShares] = useState(1)
   const [trading, setTrading] = useState(false)
+  const { currentGameId } = useGame()
+  const [gamePortfolio, setGamePortfolio] = useState<{ holdings: Record<string, number>; cash: number } | null>(null)
 
   useEffect(() => {
-    getPlayer(id).then(p => { setPlayer(p); setLoading(false) })
-  }, [id])
+    if (!currentGameId) return
+    getPlayer(currentGameId, id).then(p => { setPlayer(p); setLoading(false) })
+    if (user) getGamePortfolio(currentGameId, user.uid).then(setGamePortfolio)
+  }, [id, currentGameId, user])
 
-  const userShares = user?.portfolio.holdings[id] || 0
+  const userShares = gamePortfolio?.holdings[id] || 0
   const pct = player ? calcPercentChange(player.currentPrice, player.previousPrice) : 0
 
   const handleTrade = async (type: 'buy' | 'sell') => {
     if (!user || !player) return
     setTrading(true)
     try {
-      await executeTrade(user.uid, player.id, type, tradeShares)
+      await executeTrade(currentGameId!, user.uid, player.id, type, tradeShares)
       await refreshUser()
-      const p = await getPlayer(id)
+      const p = await getPlayer(currentGameId!, id)
+      if (currentGameId) getGamePortfolio(currentGameId, user.uid).then(setGamePortfolio)
       setPlayer(p)
       toast.success(`${type === 'buy' ? 'Bought' : 'Sold'} ${tradeShares} share${tradeShares > 1 ? 's' : ''} of ${player.name}`)
     } catch (e: any) {
@@ -175,7 +180,7 @@ export default function PlayerPage() {
               <div className="bg-surface rounded-lg p-3 text-sm">
                 <div className="flex justify-between text-muted mb-1">
                   <span>Your cash</span>
-                  <span className={clsx('font-mono', user.portfolio.cash < 0 ? 'text-red' : 'text-text')}>{formatPrice(user.portfolio.cash)}</span>
+                  <span className={clsx('font-mono', (gamePortfolio?.cash || 0) < 0 ? 'text-red' : 'text-text')}>{formatPrice(gamePortfolio?.cash || 0)}</span>
                 </div>
                 <div className="flex justify-between text-muted">
                   <span>Your shares</span>

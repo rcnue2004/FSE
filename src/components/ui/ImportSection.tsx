@@ -4,7 +4,7 @@ import { importPlayersFromExcel } from '@/lib/importExcel'
 import { Upload, CheckCircle, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-export default function ImportSection() {
+export default function ImportSection({ gameId }: { gameId: string }) {
   const [importing, setImporting] = useState(false)
   const [result, setResult] = useState<{ imported: number; errors: string[] } | null>(null)
 
@@ -14,7 +14,7 @@ export default function ImportSection() {
     setImporting(true)
     setResult(null)
     try {
-      const res = await importPlayersFromExcel(file)
+      const res = await importPlayersFromExcel(file, gameId)
       setResult(res)
       toast.success(`Imported ${res.imported} players!`)
     } catch (err: any) {

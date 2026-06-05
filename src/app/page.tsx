@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { getAllPlayers, db } from '@/lib/db'
+import { useGame } from '@/context/GameContext'
 import { Player, Trade } from '@/types'
 import PlayerCard from '@/components/ui/PlayerCard'
 import { Search, TrendingUp, TrendingDown, BarChart2, RefreshCw, Activity } from 'lucide-react'
@@ -19,25 +20,28 @@ export default function DashboardPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [filter, setFilter] = useState<'all' | 'up' | 'down'>('all')
   const [trades, setTrades] = useState<Trade[]>([])
+  const { currentGameId, currentGame } = useGame()
 
   const load = async () => {
+    if (!currentGameId) return
     setLoading(true)
-    const data = await getAllPlayers()
+    const data = await getAllPlayers(currentGameId)
     setPlayers(data)
     setLoading(false)
   }
 
   useEffect(() => {
+    if (!currentGameId) return
     load()
 
     // Real time trade feed
-    const q = query(collection(db, 'trades'), orderBy('timestamp', 'desc'))
+    const q = query(collection(db, `games/${currentGameId}/trades`), orderBy('timestamp', 'desc'))
     const unsub = onSnapshot(q, (snap) => {
       const t = snap.docs.map(d => ({ id: d.id, ...d.data() } as Trade))
       setTrades(t)
     })
     return () => unsub()
-  }, [])
+  }, [currentGameId])
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -95,7 +99,7 @@ export default function DashboardPage() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-text">Market</h1>
+              <h1 className="text-3xl font-bold text-text">{currentGame?.name || 'Market'}</h1>
               <p className="text-muted mt-1 text-sm">{players.length} players listed</p>
             </div>
             <button onClick={load} className="text-muted hover:text-accent transition-colors p-2">

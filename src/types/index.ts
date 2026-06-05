@@ -39,7 +39,7 @@ export interface WeightConfig {
 
 export interface Portfolio {
   userId: string
-  holdings: { [playerId: string]: number } // playerId -> shares owned
+  holdings: { [playerId: string]: number }
   cash: number
   totalValue: number
 }
@@ -62,17 +62,11 @@ export interface User {
   email: string
   displayName: string
   isAdmin: boolean
+  isSuperAdmin?: boolean
   startingCash: number
   portfolio: Portfolio
   trades: Trade[]
-}
-
-export interface Tournament {
-  id: string
-  name: string
-  startDate: string
-  endDate: string
-  isActive: boolean // market closed during tournament
+  games?: string[]
 }
 
 export interface MarketSettings {
@@ -82,3 +76,11 @@ export interface MarketSettings {
   activeTournament?: string
 }
 
+export interface Game {
+  id: string
+  name: string
+  inviteCode: string
+  adminUids: string[]
+  createdAt: string
+  createdBy: string
+}

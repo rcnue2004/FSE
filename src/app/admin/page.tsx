@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { getAllPlayers, submitTournamentStats, getMarketSettings, updateMarketSettings, createPlayer, adminUpdateHolding, getLeaderboard, updatePlayer, undoTournamentStats, deleteGameStats } from '@/lib/db'
+import { getAllPlayers, submitTournamentStats, getGameSettings, updateGameSettings, createPlayer, adminUpdateHolding, getLeaderboard, updatePlayer, undoTournamentStats, deleteGameStats } from '@/lib/db'
+import { useGame } from '@/context/GameContext'
 
 import { Player, MarketSettings, WeightConfig } from '@/types'
 import { formatPrice } from '@/lib/pricing'
@@ -18,6 +19,7 @@ export default function AdminPage() {
   const [players, setPlayers] = useState<Player[]>([])
   const [settings, setSettings] = useState<MarketSettings | null>(null)
   const [loading, setLoading] = useState(true)
+  const { currentGameId } = useGame()
   const [activeTab, setActiveTab] = useState<'stats' | 'weights' | 'addPlayer' | 'market' | 'holdings' | 'warnings' | 'csvImport' | 'undo'>('stats')
   const [leaderboard, setLeaderboard] = useState<{uid: string; displayName: string; totalValue: number; cash: number; holdings: Record<string, number>}[]>([])
   const [selectedUser, setSelectedUser] = useState<string | null>(null)
@@ -54,18 +56,18 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
   const [weights, setWeights] = useState<WeightConfig>({ goals: 2.5, assists: 2.0, ds: 1.5, turns: -1.0 })
 
   const load = async () => {
-    const [ps, s, lb] = await Promise.all([getAllPlayers(), getMarketSettings(), getLeaderboard()])
+    const [ps, s, lb] = await Promise.all([getAllPlayers(currentGameId!), getGameSettings(currentGameId!), getLeaderboard(currentGameId!)])
     setPlayers(ps)
     setSettings(s)
     setWeights(s.weights)
     const lbWithDetails = await Promise.all(
       lb.map(async (entry) => {
-        const { getUser } = await import('@/lib/db')
-        const u = await getUser(entry.uid)
+        const { getGamePortfolio } = await import('@/lib/db')
+        const gp = await getGamePortfolio(currentGameId!, entry.uid)
         return {
           ...entry,
-          cash: u?.portfolio.cash || 0,
-          holdings: u?.portfolio.holdings || {},
+          cash: gp?.cash || 0,
+          holdings: gp?.holdings || {},
         }
       })
     )
@@ -85,7 +87,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
     if (!selectedPlayer || !tournamentName) return toast.error('Select a player and tournament name')
     setSubmitting(true)
     try {
-      await submitTournamentStats(selectedPlayer, {
+      await submitTournamentStats(currentGameId!, selectedPlayer, {
         tournamentId: `${tournamentName}-${tournamentDate}`,
         tournamentName,
         date: new Date(tournamentDate).toISOString(),
@@ -104,14 +106,14 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
   }
 
   const handleSaveWeights = async () => {
-    await updateMarketSettings({ weights })
+    await updateGameSettings(currentGameId!, { weights })
     toast.success('Weights saved')
   }
 
   const handleAddPlayer = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newName || !newTeam) return
-    await createPlayer({
+    await createPlayer(currentGameId!, {
       name: newName,
       team: newTeam,
       position: newPosition,
@@ -130,7 +132,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
 
   const handleToggleMarket = async () => {
     if (!settings) return
-    await updateMarketSettings({ isOpen: !settings.isOpen })
+    await updateGameSettings(currentGameId!, { isOpen: !settings.isOpen })
     setSettings({ ...settings, isOpen: !settings.isOpen })
     toast.success(settings.isOpen ? 'Market closed' : 'Market opened')
   }
@@ -446,7 +448,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                 onClick={async () => {
                   if (!warningPlayer) return
                   setSavingWarning(true)
-                  await updatePlayer(warningPlayer, { warning: warningMessage })
+                  await updatePlayer(currentGameId!, warningPlayer, { warning: warningMessage })
                   toast.success('Warning saved!')
                   setSavingWarning(false)
                   load()
@@ -460,7 +462,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                 onClick={async () => {
                   if (!warningPlayer) return
                   setSavingWarning(true)
-                  await updatePlayer(warningPlayer, { warning: '' })
+                  await updatePlayer(currentGameId!, warningPlayer, { warning: '' })
                   setWarningMessage('')
                   toast.success('Warning removed')
                   setSavingWarning(false)
@@ -492,7 +494,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
           </div>
         </div>
       )}
-    
+
       {/* Holdings Manager */}
       {activeTab === 'holdings' && (
         <div className="bg-card border border-border rounded-2xl p-6">
@@ -588,7 +590,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                                             onClick={async () => {
                                               setSavingHolding(true)
                                               try {
-                                                await adminUpdateHolding(entry.uid, pid, parseInt(editingHolding.value) || 0)
+                                                await adminUpdateHolding(currentGameId!, entry.uid, pid, parseInt(editingHolding.value) || 0)
                                                 toast.success('Holdings updated')
                                                 setEditingHolding(null)
                                                 load()
@@ -701,7 +703,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                                             onClick={async () => {
                                               setSavingHolding(true)
                                               try {
-                                                await adminUpdateHolding(entry.uid, player.id, parseInt(editingHolding.value) || 0)
+                                                await adminUpdateHolding(currentGameId!, entry.uid, player.id, parseInt(editingHolding.value) || 0)
                                                 toast.success('Holdings updated')
                                                 setEditingHolding(null)
                                                 load()
@@ -917,7 +919,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                   try {
                     for (const stat of csvPreview) {
                       if (!statsOnly && !stat.isDuplicate) {
-                        await submitTournamentStats(stat.playerId, {
+                        await submitTournamentStats(currentGameId!, stat.playerId, {
                           tournamentId: `${stat.tournamentName}-${stat.date}`,
                           tournamentName: stat.tournamentName,
                           date: stat.date,
@@ -936,7 +938,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                     const pendingGames = (window as any).__pendingGameStats || []
                     for (const gs of pendingGames) {
                       if (csvPreview.some((s: any) => s.playerName === gs.playerName && s.tournamentName === gs.tournamentName)) {
-                        await addDoc(col(firedb, historicalOnly ? 'historicalStats' : 'gameStats'), {
+                        await addDoc(col(firedb, historicalOnly ? `games/${currentGameId}/historicalStats` : `games/${currentGameId}/gameStats`), {
                           ...gs,
                           season: new Date(gs.date).getFullYear().toString(),
                         })
@@ -997,8 +999,8 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                           onClick={async () => {
                             if (!confirm(`Undo ${stat.tournamentName} stats for ${player.name}? Price will revert by ${formatPrice(stat.priceChange)}.`)) return
                             try {
-                              await undoTournamentStats(player.id, stat.tournamentId)
-                              await deleteGameStats(stat.tournamentName)
+                              await undoTournamentStats(currentGameId!, player.id, stat.tournamentId)
+                              await deleteGameStats(currentGameId!, stat.tournamentName)
                               toast.success(`Undone ${stat.tournamentName} for ${player.name}`)
                               load()
                             } catch (e: any) {

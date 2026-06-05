@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { getAllPlayers, getLeaderboard } from '@/lib/db'
+import { getAllPlayers, getLeaderboard, getGamePortfolio } from '@/lib/db'
+import { useGame } from '@/context/GameContext'
 import { Player } from '@/types'
 import { formatPrice, calcPercentChange, formatPercent } from '@/lib/pricing'
 import Link from 'next/link'
@@ -15,21 +16,24 @@ export default function PortfolioPage() {
   const [players, setPlayers] = useState<Record<string, Player>>({})
   const [leaderboard, setLeaderboard] = useState<{ uid: string; displayName: string; totalValue: number }[]>([])
   const [loading, setLoading] = useState(true)
+  const { currentGameId } = useGame()
+  const [gamePortfolio, setGamePortfolio] = useState<{ holdings: Record<string, number>; cash: number } | null>(null)
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/auth')
   }, [user, authLoading])
 
   useEffect(() => {
-    if (!user) return
-    Promise.all([getAllPlayers(), getLeaderboard()]).then(([ps, lb]) => {
+    if (!user || !currentGameId) return
+    Promise.all([getAllPlayers(currentGameId), getLeaderboard(currentGameId)]).then(([ps, lb]) => {
       const map: Record<string, Player> = {}
       ps.forEach(p => map[p.id] = p)
       setPlayers(map)
       setLeaderboard(lb)
       setLoading(false)
     })
-  }, [user])
+    getGamePortfolio(currentGameId, user.uid).then(setGamePortfolio)
+  }, [user, currentGameId])
 
   if (authLoading || loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -39,11 +43,11 @@ export default function PortfolioPage() {
 
   if (!user) return null
 
-  const holdings = Object.entries(user.portfolio.holdings).filter(([, qty]) => qty > 0)
+  const holdings = Object.entries(gamePortfolio?.holdings || {}).filter(([, qty]) => qty > 0)
   const portfolioStockValue = holdings.reduce((sum, [pid, qty]) => {
     return sum + (players[pid]?.currentPrice || 0) * qty
   }, 0)
-  const totalValue = user.portfolio.cash + portfolioStockValue
+  const totalValue = (gamePortfolio?.cash || 0) + portfolioStockValue
   const startingCash = user.startingCash
   const totalPnl = totalValue - startingCash
   const totalPct = ((totalPnl / startingCash) * 100).toFixed(2)
@@ -56,7 +60,7 @@ export default function PortfolioPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {[
           { label: 'Total Value', val: formatPrice(totalValue), color: 'text-accent' },
-          { label: 'Cash', val: formatPrice(user.portfolio.cash), color: user.portfolio.cash < 0 ? 'text-red' : 'text-text' },
+          { label: 'Cash', val: formatPrice(gamePortfolio?.cash || 0), color: (gamePortfolio?.cash || 0) < 0 ? 'text-red' : 'text-text' },
           { label: 'Stocks', val: formatPrice(portfolioStockValue), color: 'text-text' },
           { label: 'P&L', val: `${totalPnl >= 0 ? '+' : ''}${formatPrice(totalPnl)} (${totalPct}%)`, color: totalPnl >= 0 ? 'text-green' : 'text-red' },
         ].map(({ label, val, color }) => (
