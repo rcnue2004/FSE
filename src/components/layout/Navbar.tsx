@@ -35,39 +35,31 @@ export default function Navbar() {
               <span className="hidden sm:block">Frisbee<span className="text-text">Exchange</span></span>
             </Link>
 
-            {/* Desktop Nav — always visible on md+ */}
+            {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted">
-              {currentGameId ? (
-                <>
-                  <Link href="/" className="flex items-center gap-1.5 hover:text-text transition-colors">
-                    <LayoutDashboard className="w-4 h-4" /> Market
-                  </Link>
-                  {user && (
-                    <Link href="/portfolio" className="flex items-center gap-1.5 hover:text-text transition-colors">
-                      <Briefcase className="w-4 h-4" /> Portfolio
-                    </Link>
-                  )}
-                  <Link href="/stats" className="flex items-center gap-1.5 hover:text-text transition-colors">
-                    <BarChart2 className="w-4 h-4" /> Stats
-                  </Link>
-                  {user?.isAdmin && (
-                    <Link href="/admin" className="flex items-center gap-1.5 text-yellow-400 hover:text-yellow-300 transition-colors">
-                      <Shield className="w-4 h-4" /> Admin
-                    </Link>
-                  )}
-                  <Link href="/games" className="flex items-center gap-1.5 text-xs bg-surface border border-border px-2.5 py-1 rounded-lg hover:text-text hover:border-accent transition-colors">
-                    <Disc className="w-3.5 h-3.5" />
-                    {currentGame?.name ?? 'Switch Game'}
-                  </Link>
-                </>
-              ) : (
-                <Link href="/games" className="flex items-center gap-1.5 text-accent hover:opacity-80 transition-opacity font-semibold">
-                  <Disc className="w-4 h-4" /> Select a Game
+              <Link href="/" className="flex items-center gap-1.5 hover:text-text transition-colors">
+                <LayoutDashboard className="w-4 h-4" /> Market
+              </Link>
+              {user && (
+                <Link href="/portfolio" className="flex items-center gap-1.5 hover:text-text transition-colors">
+                  <Briefcase className="w-4 h-4" /> Portfolio
                 </Link>
               )}
+              <Link href="/stats" className="flex items-center gap-1.5 hover:text-text transition-colors">
+                <BarChart2 className="w-4 h-4" /> Stats
+              </Link>
+              {user?.isAdmin && (
+                <Link href="/admin" className="flex items-center gap-1.5 text-yellow-400 hover:text-yellow-300 transition-colors">
+                  <Shield className="w-4 h-4" /> Admin
+                </Link>
+              )}
+              <Link href="/games" className="flex items-center gap-1.5 text-xs bg-surface border border-border px-2.5 py-1 rounded-lg hover:text-text hover:border-accent transition-colors">
+                <Disc className="w-3.5 h-3.5" />
+                {currentGame?.name ?? 'Select Game'}
+              </Link>
             </div>
 
-            {/* Mobile: always show a game button */}
+            {/* Mobile: always show game button */}
             <Link
               href="/games"
               className="md:hidden flex items-center gap-1.5 text-xs bg-surface border border-border px-2.5 py-1 rounded-lg text-muted hover:text-text hover:border-accent transition-colors"
@@ -111,33 +103,25 @@ export default function Navbar() {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="md:hidden border-t border-border px-4 py-4 flex flex-col gap-4 text-sm">
-            {currentGameId ? (
-              <>
-                <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
-                  <LayoutDashboard className="w-4 h-4" /> Market
-                </Link>
-                <Link href="/stats" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
-                  <BarChart2 className="w-4 h-4" /> Stats
-                </Link>
-                {user && (
-                  <Link href="/portfolio" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
-                    <Briefcase className="w-4 h-4" /> Portfolio
-                  </Link>
-                )}
-                {user?.isAdmin && (
-                  <Link href="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-yellow-400">
-                    <Shield className="w-4 h-4" /> Admin
-                  </Link>
-                )}
-                <Link href="/games" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
-                  <Disc className="w-4 h-4" /> Switch Game
-                </Link>
-              </>
-            ) : (
-              <Link href="/games" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-accent font-semibold">
-                <Disc className="w-4 h-4" /> Select a Game
+            <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
+              <LayoutDashboard className="w-4 h-4" /> Market
+            </Link>
+            <Link href="/stats" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
+              <BarChart2 className="w-4 h-4" /> Stats
+            </Link>
+            {user && (
+              <Link href="/portfolio" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
+                <Briefcase className="w-4 h-4" /> Portfolio
               </Link>
             )}
+            {user?.isAdmin && (
+              <Link href="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-yellow-400">
+                <Shield className="w-4 h-4" /> Admin
+              </Link>
+            )}
+            <Link href="/games" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
+              <Disc className="w-4 h-4" /> {currentGame?.name ?? 'Select Game'}
+            </Link>
             {user ? (
               <button onClick={logout} className="flex items-center gap-2 text-red text-left">
                 <LogOut className="w-4 h-4" /> Sign Out
