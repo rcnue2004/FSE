@@ -36,3 +36,6 @@ coverage/
 # Service account keys (NEVER commit these)
 *-service-account*.json
 serviceAccountKey.json
+
+# Local scripts (not part of the build)
+scripts/migrate.ts
