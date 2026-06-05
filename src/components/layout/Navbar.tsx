@@ -13,7 +13,7 @@ export default function Navbar() {
   const { user, logout, loading } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [players, setPlayers] = useState<Player[]>([])
-  const { currentGameId } = useGame()
+  const { currentGameId, currentGame } = useGame()
 
   useEffect(() => {
     if (currentGameId) getAllPlayers(currentGameId).then(setPlayers)
@@ -35,7 +35,7 @@ export default function Navbar() {
               <span className="hidden sm:block">Frisbee<span className="text-text">Exchange</span></span>
             </Link>
 
-            {/* Nav links — visible on md+, hidden on mobile (use hamburger) */}
+            {/* Desktop Nav — always visible on md+ */}
             <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted">
               {currentGameId ? (
                 <>
@@ -55,22 +55,26 @@ export default function Navbar() {
                       <Shield className="w-4 h-4" /> Admin
                     </Link>
                   )}
-                  <Link href="/games" className="text-xs bg-surface border border-border px-2.5 py-1 rounded-lg text-muted hover:text-text hover:border-accent transition-colors">
-                    Switch Game
+                  <Link href="/games" className="flex items-center gap-1.5 text-xs bg-surface border border-border px-2.5 py-1 rounded-lg hover:text-text hover:border-accent transition-colors">
+                    <Disc className="w-3.5 h-3.5" />
+                    {currentGame?.name ?? 'Switch Game'}
                   </Link>
                 </>
-              ) : null}
+              ) : (
+                <Link href="/games" className="flex items-center gap-1.5 text-accent hover:opacity-80 transition-opacity font-semibold">
+                  <Disc className="w-4 h-4" /> Select a Game
+                </Link>
+              )}
             </div>
 
-            {/* Switch Game button — always visible on mobile when in a game */}
-            {currentGameId && (
-              <Link
-                href="/games"
-                className="md:hidden flex items-center gap-1.5 text-xs bg-surface border border-border px-2.5 py-1 rounded-lg text-muted hover:text-text hover:border-accent transition-colors"
-              >
-                <Disc className="w-3.5 h-3.5" /> Switch
-              </Link>
-            )}
+            {/* Mobile: always show a game button */}
+            <Link
+              href="/games"
+              className="md:hidden flex items-center gap-1.5 text-xs bg-surface border border-border px-2.5 py-1 rounded-lg text-muted hover:text-text hover:border-accent transition-colors"
+            >
+              <Disc className="w-3.5 h-3.5" />
+              {currentGame?.name ?? 'Games'}
+            </Link>
 
             {/* Right side */}
             <div className="hidden md:flex items-center gap-4">
@@ -129,7 +133,11 @@ export default function Navbar() {
                   <Disc className="w-4 h-4" /> Switch Game
                 </Link>
               </>
-            ) : null}
+            ) : (
+              <Link href="/games" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-accent font-semibold">
+                <Disc className="w-4 h-4" /> Select a Game
+              </Link>
+            )}
             {user ? (
               <button onClick={logout} className="flex items-center gap-2 text-red text-left">
                 <LogOut className="w-4 h-4" /> Sign Out

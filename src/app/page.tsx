@@ -1,11 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { getAllPlayers, db } from '@/lib/db'
 import { useGame } from '@/context/GameContext'
 import { Player, Trade } from '@/types'
 import PlayerCard from '@/components/ui/PlayerCard'
-import { Search, TrendingUp, TrendingDown, BarChart2, RefreshCw, Activity } from 'lucide-react'
+import { Search, TrendingUp, TrendingDown, BarChart2, RefreshCw, Activity, Disc } from 'lucide-react'
 import { formatPrice, calcPercentChange } from '@/lib/pricing'
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import { format } from 'date-fns'
@@ -22,13 +21,8 @@ export default function DashboardPage() {
   const [filter, setFilter] = useState<'all' | 'up' | 'down'>('all')
   const [trades, setTrades] = useState<Trade[]>([])
   const { currentGameId, currentGame, hydrated } = useGame()
-  const router = useRouter()
 
-  useEffect(() => {
-    if (hydrated && !currentGameId) {
-      router.push('/games')
-    }
-  }, [hydrated, currentGameId])
+  // No redirect — if no game selected, show inline prompt instead
 
   const load = async () => {
     if (!currentGameId) return
@@ -98,6 +92,21 @@ export default function DashboardPage() {
       {label} {sortKey === k && (sortDir === 'desc' ? '↓' : '↑')}
     </button>
   )
+
+  if (hydrated && !currentGameId) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center">
+        <Disc className="w-14 h-14 text-accent animate-spin" style={{ animationDuration: '4s' }} />
+        <div>
+          <h1 className="text-3xl font-bold text-text mb-2">No Game Selected</h1>
+          <p className="text-muted text-sm">Choose a game to start trading.</p>
+        </div>
+        <a href="/games" className="bg-accent text-background px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity">
+          Select a Game
+        </a>
+      </div>
+    )
+  }
 
   return (
     <div className="animate-fade-in">
