@@ -48,8 +48,7 @@ const [csvImporting, setCsvImporting] = useState(false)
 
   // Add player form
   const [newName, setNewName] = useState('')
-const [newTeam, setNewTeam] = useState('')
-const [newPosition, setNewPosition] = useState('Handler')
+  const [newPosition, setNewPosition] = useState('Handler')
 const [newStartingPrice, setNewStartingPrice] = useState(100)
 
   // Weights form
@@ -112,10 +111,10 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
 
   const handleAddPlayer = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newName || !newTeam) return
+    if (!newName) return
     await createPlayer(currentGameId!, {
       name: newName,
-      team: newTeam,
+      team: '',
       position: newPosition,
       currentPrice: newStartingPrice,
       previousPrice: newStartingPrice,
@@ -126,7 +125,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
       createdAt: new Date().toISOString(),
     })
     toast.success(`${newName} added to the market!`)
-    setNewName(''); setNewTeam(''); setNewStartingPrice(100)
+    setNewName(''); setNewStartingPrice(100)
     load()
   }
 
@@ -287,17 +286,6 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                 onChange={e => setNewName(e.target.value)}
                 required
                 placeholder="Full name"
-                className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text placeholder-muted focus:outline-none focus:border-accent"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted block mb-1.5">Team</label>
-              <input
-                type="text"
-                value={newTeam}
-                onChange={e => setNewTeam(e.target.value)}
-                required
-                placeholder="Team name"
                 className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text placeholder-muted focus:outline-none focus:border-accent"
               />
             </div>

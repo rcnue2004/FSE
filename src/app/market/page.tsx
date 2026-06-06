@@ -58,7 +58,7 @@ export default function MarketPage() {
   const filtered = players
     .filter(p => {
       const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.team.toLowerCase().includes(search.toLowerCase())
+        (p.team ?? '').toLowerCase().includes(search.toLowerCase())
       const pct = calcPercentChange(p.currentPrice, p.previousPrice)
       const matchFilter = filter === 'all' || (filter === 'up' && pct >= 0) || (filter === 'down' && pct < 0)
       return matchSearch && matchFilter

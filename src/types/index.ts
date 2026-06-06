@@ -18,7 +18,7 @@ export interface PricePoint {
 export interface Player {
   id: string
   name: string
-  team: string
+  team?: string
   position: string
   currentPrice: number
   previousPrice: number
