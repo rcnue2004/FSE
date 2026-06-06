@@ -96,10 +96,16 @@ export async function joinGameWithCode(uid: string, inviteCode: string): Promise
   return gameData
 }
 
-export async function getGamePortfolio(gameId: string, uid: string): Promise<{ holdings: Record<string, number>; cash: number; totalValue: number } | null> {
-  const snap = await getDoc(doc(db, `games/${gameId}/portfolios/${uid}`))
-  if (!snap.exists()) return null
-  return snap.data() as { holdings: Record<string, number>; cash: number; totalValue: number }
+export async function getGamePortfolio(gameId: string, uid: string): Promise<{ holdings: Record<string, number>; cash: number; totalValue: number }> {
+  const ref = doc(db, `games/${gameId}/portfolios/${uid}`)
+  const snap = await getDoc(ref)
+  if (snap.exists()) return snap.data() as { holdings: Record<string, number>; cash: number; totalValue: number }
+
+  // Auto-create portfolio with the game's starting cash
+  const settings = await getGameSettings(gameId)
+  const newPortfolio = { userId: uid, holdings: {}, cash: settings.startingCash, totalValue: settings.startingCash }
+  await setDoc(ref, newPortfolio)
+  return newPortfolio
 }
 
 // ── Players ──────────────────────────────────────────────────────────────────
@@ -224,9 +230,8 @@ export async function executeTrade(
   if (!settings.isOpen) throw new Error('Market is currently closed')
   if (player.name === user.displayName) throw new Error('You cannot trade your own stock')
 
-  // Get per-game portfolio
+  // Get per-game portfolio (auto-creates if not found)
   const portfolio = await getGamePortfolio(gameId, userId)
-  if (!portfolio) throw new Error('Portfolio not found for this game')
 
   const price = player.currentPrice
   const total = price * shares
