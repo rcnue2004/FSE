@@ -24,7 +24,7 @@ export default function AuthPage() {
         await register(email, password, displayName)
       }
       toast.success(mode === 'login' ? 'Welcome back!' : 'Account created! You start with $10,000.')
-      router.push('/games')
+      router.push('/')
     } catch (err: any) {
       toast.error(err.message)
     } finally {

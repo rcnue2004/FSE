@@ -77,7 +77,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/auth')
-    if (!authLoading && user && !user.isAdmin) router.push('/')
+    if (!authLoading && user && !user.isAdmin) router.push('/market')
   }, [user, authLoading])
 
   useEffect(() => { if (user?.isAdmin) load() }, [user])

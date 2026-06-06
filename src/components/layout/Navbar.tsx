@@ -37,7 +37,7 @@ export default function Navbar() {
 
             {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted">
-              <Link href="/" className="flex items-center gap-1.5 hover:text-text transition-colors">
+              <Link href="/market" className="flex items-center gap-1.5 hover:text-text transition-colors">
                 <LayoutDashboard className="w-4 h-4" /> Market
               </Link>
               {user && (
@@ -53,7 +53,7 @@ export default function Navbar() {
                   <Shield className="w-4 h-4" /> Admin
                 </Link>
               )}
-              <Link href="/games" className="flex items-center gap-1.5 text-xs bg-surface border border-border px-2.5 py-1 rounded-lg hover:text-text hover:border-accent transition-colors">
+              <Link href="/" className="flex items-center gap-1.5 text-xs bg-surface border border-border px-2.5 py-1 rounded-lg hover:text-text hover:border-accent transition-colors">
                 <Disc className="w-3.5 h-3.5" />
                 {currentGame?.name ?? 'Select Game'}
               </Link>
@@ -61,7 +61,7 @@ export default function Navbar() {
 
             {/* Mobile: always show game button */}
             <Link
-              href="/games"
+              href="/"
               className="md:hidden flex items-center gap-1.5 text-xs bg-surface border border-border px-2.5 py-1 rounded-lg text-muted hover:text-text hover:border-accent transition-colors"
             >
               <Disc className="w-3.5 h-3.5" />
@@ -103,7 +103,7 @@ export default function Navbar() {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="md:hidden border-t border-border px-4 py-4 flex flex-col gap-4 text-sm">
-            <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
+            <Link href="/market" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
               <LayoutDashboard className="w-4 h-4" /> Market
             </Link>
             <Link href="/stats" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
@@ -119,7 +119,7 @@ export default function Navbar() {
                 <Shield className="w-4 h-4" /> Admin
               </Link>
             )}
-            <Link href="/games" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
+            <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
               <Disc className="w-4 h-4" /> {currentGame?.name ?? 'Select Game'}
             </Link>
             {user ? (

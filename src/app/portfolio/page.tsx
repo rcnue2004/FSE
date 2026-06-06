@@ -21,7 +21,8 @@ export default function PortfolioPage() {
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/auth')
-  }, [user, authLoading])
+    if (!authLoading && user && !currentGameId) router.push('/')
+  }, [user, authLoading, currentGameId])
 
   useEffect(() => {
     if (!user || !currentGameId) return
@@ -80,7 +81,7 @@ export default function PortfolioPage() {
           {holdings.length === 0 ? (
             <div className="bg-card border border-border rounded-xl p-8 text-center text-muted">
               <p>No positions yet.</p>
-              <Link href="/" className="text-accent text-sm mt-2 inline-block hover:underline">Browse the market →</Link>
+              <Link href="/market" className="text-accent text-sm mt-2 inline-block hover:underline">Browse the market →</Link>
             </div>
           ) : (
             <div className="space-y-2">
