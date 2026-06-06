@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useState, useEffect } from 'react'
 import { Disc, LayoutDashboard, Briefcase, Shield, LogOut, LogIn, Menu, X, TrendingUp, TrendingDown, BarChart2 } from 'lucide-react'
 import { formatPrice, calcPercentChange } from '@/lib/pricing'
-import { getAllPlayers } from '@/lib/db'
+import { getAllPlayers, getGamePortfolio } from '@/lib/db'
 import { useGame } from '@/context/GameContext'
 import { Player } from '@/types'
 import clsx from 'clsx'
@@ -13,6 +13,7 @@ export default function Navbar() {
   const { user, logout, loading } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [players, setPlayers] = useState<Player[]>([])
+  const [gameCash, setGameCash] = useState<number | null>(null)
   const { currentGameId, currentGame } = useGame()
 
   useEffect(() => {
@@ -23,6 +24,15 @@ export default function Navbar() {
     }, 30000)
     return () => clearInterval(interval)
   }, [currentGameId])
+
+  // Fetch game-scoped cash whenever game or user changes
+  useEffect(() => {
+    if (currentGameId && user) {
+      getGamePortfolio(currentGameId, user.uid).then(p => setGameCash(p?.cash ?? null))
+    } else {
+      setGameCash(null)
+    }
+  }, [currentGameId, user])
 
   return (
     <>
@@ -74,7 +84,9 @@ export default function Navbar() {
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <p className="text-xs text-muted">{user.displayName}</p>
-                    <p className="text-sm font-mono text-accent">{formatPrice(user.portfolio.cash)}</p>
+                    {gameCash !== null && (
+                      <p className="text-sm font-mono text-accent">{formatPrice(gameCash)}</p>
+                    )}
                   </div>
                   <button
                     onClick={logout}
