@@ -1,13 +1,13 @@
 import { WeightConfig, TournamentStats, PricePoint } from '@/types'
 
 export const DEFAULT_WEIGHTS: WeightConfig = {
-  goals: 2.5,
-  assists: 2.0,
-  ds: 1.5,
-  turns: -1.0,
+  goals: 10,
+  assists: 10,
+  ds: 10,
+  turns: -10,
 }
 
-export const STARTING_CASH = 10000
+export const STARTING_CASH = 1500
 export const MAX_SHARES_PER_PLAYER = 15
 export const DEFAULT_STARTING_PRICE = 100
 

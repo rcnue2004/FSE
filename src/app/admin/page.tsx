@@ -49,6 +49,8 @@ const [csvImporting, setCsvImporting] = useState(false)
   // Add player form
   const [newName, setNewName] = useState('')
   const [newPosition, setNewPosition] = useState('Handler')
+  const [renamingPlayerId, setRenamingPlayerId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
 const [newStartingPrice, setNewStartingPrice] = useState(100)
 
   // Weights form
@@ -319,11 +321,47 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
 
           <div className="mt-6 space-y-2">
             <p className="text-sm text-muted font-medium">Active Players ({players.length})</p>
-            {players.sort((a,b) => a.name.localeCompare(b.name)).map(p => (
-              <div key={p.id} className="flex justify-between items-center bg-surface rounded-lg px-3 py-2 text-sm">
-                <span>{p.name}</span>
-                <span className="text-muted">{p.team}</span>
-                <span className="font-mono text-accent">{formatPrice(p.currentPrice)}</span>
+            {[...players].sort((a, b) => a.name.localeCompare(b.name)).map(p => (
+              <div key={p.id} className="flex items-center gap-2 bg-surface rounded-lg px-3 py-2 text-sm">
+                {renamingPlayerId === p.id ? (
+                  <>
+                    <input
+                      autoFocus
+                      value={renameValue}
+                      onChange={e => setRenameValue(e.target.value)}
+                      className="flex-1 bg-background border border-border rounded-lg px-2 py-1 text-sm text-text focus:outline-none focus:border-accent"
+                    />
+                    <button
+                      onClick={async () => {
+                        if (renameValue.trim()) {
+                          await updatePlayer(currentGameId!, p.id, { name: renameValue.trim() })
+                          setRenamingPlayerId(null)
+                          load()
+                        }
+                      }}
+                      className="text-green hover:opacity-80 transition-opacity p-1"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setRenamingPlayerId(null)}
+                      className="text-muted hover:text-text transition-colors p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex-1">{p.name}</span>
+                    <span className="font-mono text-accent">{formatPrice(p.currentPrice)}</span>
+                    <button
+                      onClick={() => { setRenamingPlayerId(p.id); setRenameValue(p.name) }}
+                      className="text-muted hover:text-accent transition-colors p-1"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
               </div>
             ))}
           </div>
