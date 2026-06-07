@@ -374,7 +374,10 @@ export async function getTournamentSchedule(gameId: string): Promise<TournamentE
 }
 
 export async function addTournamentEvent(gameId: string, event: Omit<TournamentEvent, 'id'>): Promise<void> {
-  await addDoc(scheduleCol(gameId), event)
+  const cleanEvent = Object.fromEntries(
+    Object.entries(event).filter(([_, v]) => v !== undefined)
+  )
+  await addDoc(scheduleCol(gameId), cleanEvent)
 }
 
 export async function deleteTournamentEvent(gameId: string, eventId: string): Promise<void> {

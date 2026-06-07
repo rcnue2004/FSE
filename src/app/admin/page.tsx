@@ -141,7 +141,13 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
     if (!eventName || !eventStartDate || !eventEndDate || !eventLocation) return toast.error('Fill in name, dates, and location')
     setSavingEvent(true)
     try {
-      await addTournamentEvent(currentGameId!, { name: eventName, startDate: eventStartDate, endDate: eventEndDate, location: eventLocation, notes: eventNotes || undefined })
+      await addTournamentEvent(currentGameId!, {
+        name: eventName,
+        startDate: eventStartDate || '',
+        endDate: eventEndDate || '',
+        location: eventLocation,
+        notes: eventNotes || '',
+      })
       toast.success('Tournament added')
       setEventName(''); setEventStartDate(''); setEventEndDate(''); setEventLocation(''); setEventNotes('')
       load()
@@ -172,10 +178,10 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
     try {
       await updateTournamentEvent(currentGameId!, id, {
         name: editEvent.name,
-        startDate: editEvent.startDate,
-        endDate: editEvent.endDate,
+        startDate: editEvent.startDate || '',
+        endDate: editEvent.endDate || '',
         location: editEvent.location,
-        notes: editEvent.notes || undefined,
+        notes: editEvent.notes || '',
       })
       toast.success('Tournament updated')
       setEditingEventId(null)
