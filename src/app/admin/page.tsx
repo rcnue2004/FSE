@@ -1,10 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { getAllPlayers, submitTournamentStats, getGameSettings, updateGameSettings, createPlayer, adminUpdateHolding, getLeaderboard, updatePlayer, undoTournamentStats, deleteGameStats } from '@/lib/db'
+import { getAllPlayers, submitTournamentStats, getGameSettings, updateGameSettings, createPlayer, adminUpdateHolding, getLeaderboard, updatePlayer, undoTournamentStats, deleteGameStats, getTournamentSchedule, addTournamentEvent, deleteTournamentEvent, updateTournamentEvent } from '@/lib/db'
 import { useGame } from '@/context/GameContext'
 
-import { Player, MarketSettings, WeightConfig } from '@/types'
+import { Player, MarketSettings, WeightConfig, TournamentEvent } from '@/types'
 import { formatPrice } from '@/lib/pricing'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
@@ -12,6 +12,7 @@ import { Shield, Plus, Settings, Lock, Unlock, Users, Edit2, Check, X, AlertTria
 import clsx from 'clsx'
 import { DEFAULT_STARTING_PRICE, MAX_SHARES_PER_PLAYER } from '@/lib/pricing'
 import { parseFullCSV } from '@/lib/parseCSV'
+import { format } from 'date-fns'
 
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth()
@@ -20,7 +21,7 @@ export default function AdminPage() {
   const [settings, setSettings] = useState<MarketSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const { currentGameId } = useGame()
-  const [activeTab, setActiveTab] = useState<'stats' | 'weights' | 'addPlayer' | 'market' | 'holdings' | 'warnings' | 'csvImport' | 'undo'>('stats')
+  const [activeTab, setActiveTab] = useState<'stats' | 'weights' | 'addPlayer' | 'market' | 'holdings' | 'warnings' | 'csvImport' | 'undo' | 'schedule'>('stats')
   const [leaderboard, setLeaderboard] = useState<{uid: string; displayName: string; totalValue: number; cash: number; holdings: Record<string, number>}[]>([])
   const [selectedUser, setSelectedUser] = useState<string | null>(null)
   const [editingHolding, setEditingHolding] = useState<{playerId: string; value: string} | null>(null)
@@ -53,13 +54,24 @@ const [csvImporting, setCsvImporting] = useState(false)
   const [renameValue, setRenameValue] = useState('')
 const [newStartingPrice, setNewStartingPrice] = useState(100)
 
+  // Schedule form
+  const [schedule, setSchedule] = useState<TournamentEvent[]>([])
+  const [eventName, setEventName] = useState('')
+  const [eventDate, setEventDate] = useState('')
+  const [eventLocation, setEventLocation] = useState('')
+  const [eventNotes, setEventNotes] = useState('')
+  const [savingEvent, setSavingEvent] = useState(false)
+  const [editingEventId, setEditingEventId] = useState<string | null>(null)
+  const [editEvent, setEditEvent] = useState<{ name: string; date: string; location: string; notes: string }>({ name: '', date: '', location: '', notes: '' })
+
   // Weights form
   const [weights, setWeights] = useState<WeightConfig>({ goals: 2.5, assists: 2.0, ds: 1.5, turns: -1.0 })
 
   const load = async () => {
-    const [ps, s, lb] = await Promise.all([getAllPlayers(currentGameId!), getGameSettings(currentGameId!), getLeaderboard(currentGameId!)])
+    const [ps, s, lb, sched] = await Promise.all([getAllPlayers(currentGameId!), getGameSettings(currentGameId!), getLeaderboard(currentGameId!), getTournamentSchedule(currentGameId!)])
     setPlayers(ps)
     setSettings(s)
+    setSchedule(sched)
     setWeights(s.weights)
     const lbWithDetails = await Promise.all(
       lb.map(async (entry) => {
@@ -111,6 +123,54 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
     toast.success('Weights saved')
   }
 
+  const handleAddEvent = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!eventName || !eventDate || !eventLocation) return toast.error('Fill in name, date, and location')
+    setSavingEvent(true)
+    try {
+      await addTournamentEvent(currentGameId!, { name: eventName, date: eventDate, location: eventLocation, notes: eventNotes || undefined })
+      toast.success('Tournament added')
+      setEventName(''); setEventDate(''); setEventLocation(''); setEventNotes('')
+      load()
+    } catch (e: any) {
+      toast.error(e.message)
+    } finally {
+      setSavingEvent(false)
+    }
+  }
+
+  const handleDeleteEvent = async (id: string) => {
+    if (!confirm('Delete this tournament from the schedule?')) return
+    try {
+      await deleteTournamentEvent(currentGameId!, id)
+      toast.success('Tournament removed')
+      load()
+    } catch (e: any) {
+      toast.error(e.message)
+    }
+  }
+
+  const startEditEvent = (ev: TournamentEvent) => {
+    setEditingEventId(ev.id)
+    setEditEvent({ name: ev.name, date: ev.date, location: ev.location, notes: ev.notes || '' })
+  }
+
+  const saveEditEvent = async (id: string) => {
+    try {
+      await updateTournamentEvent(currentGameId!, id, {
+        name: editEvent.name,
+        date: editEvent.date,
+        location: editEvent.location,
+        notes: editEvent.notes || undefined,
+      })
+      toast.success('Tournament updated')
+      setEditingEventId(null)
+      load()
+    } catch (e: any) {
+      toast.error(e.message)
+    }
+  }
+
   const handleAddPlayer = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newName) return
@@ -154,6 +214,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
     { id: 'warnings', label: 'Warnings' },
     { id: 'csvImport', label: 'CSV Import' },
     { id: 'undo', label: 'Undo' },
+    { id: 'schedule', label: 'Schedule' },
   ] as const
 
   return (
@@ -1047,6 +1108,147 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
             )}
           </div>
         </div>
-      )}</div>
+      )}
+
+      {/* Schedule */}
+      {activeTab === 'schedule' && (
+        <div className="space-y-6">
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <h2 className="text-lg font-semibold mb-4">Add Tournament</h2>
+            <form onSubmit={handleAddEvent} className="space-y-4">
+              <div>
+                <label className="text-xs text-muted block mb-1.5">Tournament Name</label>
+                <input
+                  type="text"
+                  value={eventName}
+                  onChange={e => setEventName(e.target.value)}
+                  className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text placeholder-muted focus:outline-none focus:border-accent"
+                  placeholder="e.g. Regionals"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted block mb-1.5">Date</label>
+                <input
+                  type="date"
+                  value={eventDate}
+                  onChange={e => setEventDate(e.target.value)}
+                  className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text placeholder-muted focus:outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted block mb-1.5">Location</label>
+                <input
+                  type="text"
+                  value={eventLocation}
+                  onChange={e => setEventLocation(e.target.value)}
+                  className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text placeholder-muted focus:outline-none focus:border-accent"
+                  placeholder="e.g. Sarasota, FL"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted block mb-1.5">Notes (optional)</label>
+                <textarea
+                  value={eventNotes}
+                  onChange={e => setEventNotes(e.target.value)}
+                  rows={3}
+                  className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text placeholder-muted focus:outline-none focus:border-accent"
+                  placeholder="Any additional info..."
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={savingEvent}
+                className="w-full bg-accent text-background py-3 rounded-xl font-semibold text-sm hover:bg-accent-dim transition-colors disabled:opacity-50"
+              >
+                {savingEvent ? 'Adding...' : 'Add Tournament'}
+              </button>
+            </form>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <h2 className="text-lg font-semibold mb-4">Upcoming Tournaments</h2>
+            {schedule.length === 0 ? (
+              <p className="text-muted text-sm text-center py-8">No tournaments scheduled yet</p>
+            ) : (
+              <div className="space-y-3">
+                {schedule.map(ev => (
+                  <div key={ev.id} className="bg-surface rounded-xl p-4">
+                    {editingEventId === ev.id ? (
+                      <div className="space-y-3">
+                        <input
+                          type="text"
+                          value={editEvent.name}
+                          onChange={e => setEditEvent(v => ({ ...v, name: e.target.value }))}
+                          className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-text focus:outline-none focus:border-accent"
+                          placeholder="Tournament Name"
+                        />
+                        <input
+                          type="date"
+                          value={editEvent.date}
+                          onChange={e => setEditEvent(v => ({ ...v, date: e.target.value }))}
+                          className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-text focus:outline-none focus:border-accent"
+                        />
+                        <input
+                          type="text"
+                          value={editEvent.location}
+                          onChange={e => setEditEvent(v => ({ ...v, location: e.target.value }))}
+                          className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-text focus:outline-none focus:border-accent"
+                          placeholder="Location"
+                        />
+                        <textarea
+                          value={editEvent.notes}
+                          onChange={e => setEditEvent(v => ({ ...v, notes: e.target.value }))}
+                          rows={2}
+                          className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-text focus:outline-none focus:border-accent"
+                          placeholder="Notes (optional)"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => saveEditEvent(ev.id)}
+                            className="flex items-center gap-1.5 bg-green/20 text-green px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green/30 transition-colors"
+                          >
+                            <Check className="w-3.5 h-3.5" /> Save
+                          </button>
+                          <button
+                            onClick={() => setEditingEventId(null)}
+                            className="flex items-center gap-1.5 bg-surface border border-border text-muted px-3 py-1.5 rounded-lg text-xs font-medium hover:text-text transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" /> Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-semibold text-text">{ev.name}</p>
+                          <p className="text-xs text-muted font-mono mt-0.5">
+                            {format(new Date(ev.date), 'MMM d, yyyy')} · {ev.location}
+                          </p>
+                          {ev.notes && <p className="text-sm text-muted mt-1.5">{ev.notes}</p>}
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            onClick={() => startEditEvent(ev)}
+                            className="flex items-center gap-1 bg-surface border border-border text-muted px-2.5 py-1.5 rounded-lg text-xs font-medium hover:text-text transition-colors"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteEvent(ev.id)}
+                            className="flex items-center gap-1 bg-red/20 text-red px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-red/30 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      </div>
   )
 }

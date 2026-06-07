@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { useState, useEffect } from 'react'
-import { Disc, LayoutDashboard, Briefcase, Shield, LogOut, LogIn, Menu, X, TrendingUp, TrendingDown, BarChart2 } from 'lucide-react'
+import { Disc, LayoutDashboard, Briefcase, Shield, LogOut, LogIn, Menu, X, TrendingUp, TrendingDown, BarChart2, Calendar } from 'lucide-react'
 import { formatPrice, calcPercentChange } from '@/lib/pricing'
 import { getAllPlayers, getGamePortfolio } from '@/lib/db'
 import { useGame } from '@/context/GameContext'
@@ -57,6 +57,9 @@ export default function Navbar() {
               )}
               <Link href="/stats" className="flex items-center gap-1.5 hover:text-text transition-colors">
                 <BarChart2 className="w-4 h-4" /> Stats
+              </Link>
+              <Link href="/schedule" className="flex items-center gap-1.5 hover:text-text transition-colors">
+                <Calendar className="w-4 h-4" /> Schedule
               </Link>
               {user?.isAdmin && (
                 <Link href="/admin" className="flex items-center gap-1.5 text-yellow-400 hover:text-yellow-300 transition-colors">
@@ -126,6 +129,9 @@ export default function Navbar() {
                 <Briefcase className="w-4 h-4" /> Portfolio
               </Link>
             )}
+            <Link href="/schedule" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-muted hover:text-text">
+              <Calendar className="w-4 h-4" /> Schedule
+            </Link>
             {user?.isAdmin && (
               <Link href="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-yellow-400">
                 <Shield className="w-4 h-4" /> Admin

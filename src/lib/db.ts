@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 export { db }
-import { Player, User, Trade, MarketSettings, WeightConfig, TournamentStats, Game } from '@/types'
+import { Player, User, Trade, MarketSettings, WeightConfig, TournamentStats, Game, TournamentEvent } from '@/types'
 import { calculatePriceChange, DEFAULT_WEIGHTS, STARTING_CASH, MAX_SHARES_PER_PLAYER } from './pricing'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -25,6 +25,7 @@ const tradesCol = (gameId: string) => collection(db, `games/${gameId}/trades`)
 const gameStatsCol = (gameId: string) => collection(db, `games/${gameId}/gameStats`)
 const histStatsCol = (gameId: string) => collection(db, `games/${gameId}/historicalStats`)
 const settingsDoc = (gameId: string) => doc(db, `games/${gameId}/settings/market`)
+const scheduleCol = (gameId: string) => collection(db, `games/${gameId}/schedule`)
 
 // ── Games ─────────────────────────────────────────────────────────────────────
 
@@ -362,6 +363,26 @@ export const deleteGameStats = async (gameId: string, tournamentName: string, op
   const batch = writeBatch(db)
   snap.docs.forEach(d => batch.delete(d.ref))
   await batch.commit()
+}
+
+// ── Tournament Schedule ───────────────────────────────────────────────────────
+
+export async function getTournamentSchedule(gameId: string): Promise<TournamentEvent[]> {
+  const q = query(scheduleCol(gameId), orderBy('date', 'asc'))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as TournamentEvent))
+}
+
+export async function addTournamentEvent(gameId: string, event: Omit<TournamentEvent, 'id'>): Promise<void> {
+  await addDoc(scheduleCol(gameId), event)
+}
+
+export async function deleteTournamentEvent(gameId: string, eventId: string): Promise<void> {
+  await deleteDoc(doc(db, `games/${gameId}/schedule/${eventId}`))
+}
+
+export async function updateTournamentEvent(gameId: string, eventId: string, data: Partial<TournamentEvent>): Promise<void> {
+  await updateDoc(doc(db, `games/${gameId}/schedule/${eventId}`), data as Record<string, unknown>)
 }
 
 export { gameStatsCol, histStatsCol }
