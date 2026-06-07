@@ -1,17 +1,39 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getAllPlayers, db } from '@/lib/db'
+import { getAllPlayers, getTournamentSchedule, db } from '@/lib/db'
 import { useGame } from '@/context/GameContext'
-import { Player, Trade } from '@/types'
+import { Player, Trade, TournamentEvent } from '@/types'
 import PlayerCard from '@/components/ui/PlayerCard'
-import { Search, TrendingUp, TrendingDown, BarChart2, RefreshCw, Activity, Disc } from 'lucide-react'
+import { Search, TrendingUp, TrendingDown, BarChart2, RefreshCw, Activity, Disc, Calendar, MapPin } from 'lucide-react'
 import { formatPrice, calcPercentChange } from '@/lib/pricing'
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 
 type SortKey = 'price' | 'change' | 'name' | 'shares'
+
+function formatDateRange(startDate: string, endDate: string): string {
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  if (start.toDateString() === end.toDateString()) {
+    return format(start, 'MMM d')
+  }
+  if (format(start, 'MMM') === format(end, 'MMM')) {
+    return `${format(start, 'MMM d')}-${format(end, 'd')}`
+  }
+  return `${format(start, 'MMM d')} - ${format(end, 'MMM d')}`
+}
+
+function getTournamentStatus(ev: { startDate: string; endDate: string }): 'past' | 'ongoing' | 'upcoming' {
+  const now = new Date()
+  const start = new Date(ev.startDate)
+  const end = new Date(ev.endDate)
+  end.setHours(23, 59, 59, 999)
+  if (now > end) return 'past'
+  if (now >= start && now <= end) return 'ongoing'
+  return 'upcoming'
+}
 
 export default function MarketPage() {
   const [players, setPlayers] = useState<Player[]>([])
@@ -21,6 +43,7 @@ export default function MarketPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [filter, setFilter] = useState<'all' | 'up' | 'down'>('all')
   const [trades, setTrades] = useState<Trade[]>([])
+  const [schedule, setSchedule] = useState<TournamentEvent[]>([])
   const { currentGameId, currentGame } = useGame()
   const router = useRouter()
 
@@ -34,6 +57,7 @@ export default function MarketPage() {
       setPlayers(data)
       setLoading(false)
     })
+    getTournamentSchedule(currentGameId).then(setSchedule)
 
     const q = query(collection(db, `games/${currentGameId}/trades`), orderBy('timestamp', 'desc'))
     const unsub = onSnapshot(q, snap => {
@@ -205,15 +229,15 @@ export default function MarketPage() {
           )}
         </div>
 
-        {/* Right — Trade Feed */}
-        <div className="w-72 shrink-0 hidden lg:block">
+        {/* Right — Trade Feed + Schedule */}
+        <div className="w-72 shrink-0 hidden lg:flex lg:flex-col gap-4">
           <div className="bg-card border border-border rounded-xl sticky top-24">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
               <Activity className="w-4 h-4 text-accent" />
               <h2 className="font-semibold text-sm">Live Trade Feed</h2>
               <span className="ml-auto w-2 h-2 rounded-full bg-green animate-pulse" />
             </div>
-            <div className="overflow-y-auto" style={{ maxHeight: '80vh' }}>
+            <div className="overflow-y-auto" style={{ maxHeight: '40vh' }}>
               {trades.length === 0 ? (
                 <div className="text-center py-8 text-muted text-sm">No trades yet</div>
               ) : (
@@ -242,6 +266,47 @@ export default function MarketPage() {
                     </p>
                   </div>
                 ))
+              )}
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl sticky top-24">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+              <Calendar className="w-4 h-4 text-accent" />
+              <h2 className="font-semibold text-sm">Schedule</h2>
+            </div>
+            <div className="overflow-y-auto" style={{ maxHeight: '40vh' }}>
+              {schedule.length === 0 ? (
+                <div className="text-center py-8 text-muted text-sm">No upcoming tournaments</div>
+              ) : (
+                schedule.map(ev => {
+                  const status = getTournamentStatus(ev)
+                  return (
+                    <div
+                      key={ev.id}
+                      className={clsx(
+                        'px-4 py-3 border-b border-border last:border-0',
+                        status === 'past' && 'opacity-50'
+                      )}
+                    >
+                      <p className={clsx(
+                        'text-sm font-semibold',
+                        status === 'ongoing' ? 'text-accent' : status === 'past' ? 'text-muted' : 'text-text'
+                      )}>
+                        {ev.name}
+                      </p>
+                      <p className={clsx(
+                        'text-xs mt-0.5',
+                        status === 'ongoing' ? 'text-accent' : 'text-muted'
+                      )}>
+                        {formatDateRange(ev.startDate, ev.endDate)}
+                      </p>
+                      <p className="flex items-center gap-1 text-xs text-muted mt-0.5">
+                        <MapPin className="w-3 h-3" /> {ev.location}
+                      </p>
+                    </div>
+                  )
+                })
               )}
             </div>
           </div>

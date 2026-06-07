@@ -14,6 +14,18 @@ import { DEFAULT_STARTING_PRICE, MAX_SHARES_PER_PLAYER } from '@/lib/pricing'
 import { parseFullCSV } from '@/lib/parseCSV'
 import { format } from 'date-fns'
 
+function formatDateRange(startDate: string, endDate: string): string {
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  if (start.toDateString() === end.toDateString()) {
+    return format(start, 'MMM d')
+  }
+  if (format(start, 'MMM') === format(end, 'MMM')) {
+    return `${format(start, 'MMM d')}-${format(end, 'd')}`
+  }
+  return `${format(start, 'MMM d')} - ${format(end, 'MMM d')}`
+}
+
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
@@ -57,12 +69,13 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
   // Schedule form
   const [schedule, setSchedule] = useState<TournamentEvent[]>([])
   const [eventName, setEventName] = useState('')
-  const [eventDate, setEventDate] = useState('')
+  const [eventStartDate, setEventStartDate] = useState('')
+  const [eventEndDate, setEventEndDate] = useState('')
   const [eventLocation, setEventLocation] = useState('')
   const [eventNotes, setEventNotes] = useState('')
   const [savingEvent, setSavingEvent] = useState(false)
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
-  const [editEvent, setEditEvent] = useState<{ name: string; date: string; location: string; notes: string }>({ name: '', date: '', location: '', notes: '' })
+  const [editEvent, setEditEvent] = useState<{ name: string; startDate: string; endDate: string; location: string; notes: string }>({ name: '', startDate: '', endDate: '', location: '', notes: '' })
 
   // Weights form
   const [weights, setWeights] = useState<WeightConfig>({ goals: 2.5, assists: 2.0, ds: 1.5, turns: -1.0 })
@@ -125,12 +138,12 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
 
   const handleAddEvent = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!eventName || !eventDate || !eventLocation) return toast.error('Fill in name, date, and location')
+    if (!eventName || !eventStartDate || !eventEndDate || !eventLocation) return toast.error('Fill in name, dates, and location')
     setSavingEvent(true)
     try {
-      await addTournamentEvent(currentGameId!, { name: eventName, date: eventDate, location: eventLocation, notes: eventNotes || undefined })
+      await addTournamentEvent(currentGameId!, { name: eventName, startDate: eventStartDate, endDate: eventEndDate, location: eventLocation, notes: eventNotes || undefined })
       toast.success('Tournament added')
-      setEventName(''); setEventDate(''); setEventLocation(''); setEventNotes('')
+      setEventName(''); setEventStartDate(''); setEventEndDate(''); setEventLocation(''); setEventNotes('')
       load()
     } catch (e: any) {
       toast.error(e.message)
@@ -152,14 +165,15 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
 
   const startEditEvent = (ev: TournamentEvent) => {
     setEditingEventId(ev.id)
-    setEditEvent({ name: ev.name, date: ev.date, location: ev.location, notes: ev.notes || '' })
+    setEditEvent({ name: ev.name, startDate: ev.startDate, endDate: ev.endDate, location: ev.location, notes: ev.notes || '' })
   }
 
   const saveEditEvent = async (id: string) => {
     try {
       await updateTournamentEvent(currentGameId!, id, {
         name: editEvent.name,
-        date: editEvent.date,
+        startDate: editEvent.startDate,
+        endDate: editEvent.endDate,
         location: editEvent.location,
         notes: editEvent.notes || undefined,
       })
@@ -1126,14 +1140,25 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                   placeholder="e.g. Regionals"
                 />
               </div>
-              <div>
-                <label className="text-xs text-muted block mb-1.5">Date</label>
-                <input
-                  type="date"
-                  value={eventDate}
-                  onChange={e => setEventDate(e.target.value)}
-                  className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text placeholder-muted focus:outline-none focus:border-accent"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted block mb-1.5">Start Date</label>
+                  <input
+                    type="date"
+                    value={eventStartDate}
+                    onChange={e => setEventStartDate(e.target.value)}
+                    className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text placeholder-muted focus:outline-none focus:border-accent"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted block mb-1.5">End Date</label>
+                  <input
+                    type="date"
+                    value={eventEndDate}
+                    onChange={e => setEventEndDate(e.target.value)}
+                    className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text placeholder-muted focus:outline-none focus:border-accent"
+                  />
+                </div>
               </div>
               <div>
                 <label className="text-xs text-muted block mb-1.5">Location</label>
@@ -1182,12 +1207,20 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                           className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-text focus:outline-none focus:border-accent"
                           placeholder="Tournament Name"
                         />
-                        <input
-                          type="date"
-                          value={editEvent.date}
-                          onChange={e => setEditEvent(v => ({ ...v, date: e.target.value }))}
-                          className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-text focus:outline-none focus:border-accent"
-                        />
+                        <div className="grid grid-cols-2 gap-3">
+                          <input
+                            type="date"
+                            value={editEvent.startDate}
+                            onChange={e => setEditEvent(v => ({ ...v, startDate: e.target.value }))}
+                            className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-text focus:outline-none focus:border-accent"
+                          />
+                          <input
+                            type="date"
+                            value={editEvent.endDate}
+                            onChange={e => setEditEvent(v => ({ ...v, endDate: e.target.value }))}
+                            className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-text focus:outline-none focus:border-accent"
+                          />
+                        </div>
                         <input
                           type="text"
                           value={editEvent.location}
@@ -1222,7 +1255,7 @@ const [newStartingPrice, setNewStartingPrice] = useState(100)
                         <div>
                           <p className="font-semibold text-text">{ev.name}</p>
                           <p className="text-xs text-muted font-mono mt-0.5">
-                            {format(new Date(ev.date), 'MMM d, yyyy')} · {ev.location}
+                            {formatDateRange(ev.startDate, ev.endDate)} · {ev.location}
                           </p>
                           {ev.notes && <p className="text-sm text-muted mt-1.5">{ev.notes}</p>}
                         </div>

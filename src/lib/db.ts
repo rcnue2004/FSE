@@ -368,7 +368,7 @@ export const deleteGameStats = async (gameId: string, tournamentName: string, op
 // ── Tournament Schedule ───────────────────────────────────────────────────────
 
 export async function getTournamentSchedule(gameId: string): Promise<TournamentEvent[]> {
-  const q = query(scheduleCol(gameId), orderBy('date', 'asc'))
+  const q = query(scheduleCol(gameId), orderBy('startDate', 'asc'))
   const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as TournamentEvent))
 }

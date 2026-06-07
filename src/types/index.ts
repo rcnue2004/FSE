@@ -79,7 +79,8 @@ export interface MarketSettings {
 export interface TournamentEvent {
   id: string
   name: string
-  date: string
+  startDate: string
+  endDate: string
   location: string
   notes?: string
 }
